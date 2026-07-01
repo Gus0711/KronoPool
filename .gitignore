@@ -1,0 +1,28 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS / éditeur
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Base de données locale (persistée hors git)
+/data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Bundle handoff d'origine
+Gestion des plannings de piscine.zip

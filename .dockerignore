@@ -1,0 +1,15 @@
+node_modules
+.svelte-kit
+build
+data
+*.db
+*.db-*
+.env
+.env.*
+!.env.example
+.git
+.github
+docs
+*.md
+!package.json
+Gestion des plannings de piscine.zip

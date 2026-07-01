@@ -1,0 +1,43 @@
+{
+  "name": "kronopool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:migrate:apply": "node scripts/migrate.mjs",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "node --env-file=.env --experimental-strip-types src/lib/server/db/seed.ts",
+    "db:seed:dev": "node --env-file=.env --experimental-strip-types src/lib/server/db/seed-dev.ts"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^5.2.9",
+    "@sveltejs/kit": "^2.8.1",
+    "@sveltejs/vite-plugin-svelte": "^4.0.2",
+    "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.28.1",
+    "postcss": "^8.4.49",
+    "svelte": "^5.2.7",
+    "svelte-check": "^4.1.0",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "@node-rs/argon2": "^2.0.2",
+    "drizzle-orm": "^0.36.4",
+    "lucide-svelte": "^0.460.0",
+    "zod": "^3.23.8"
+  }
+}
