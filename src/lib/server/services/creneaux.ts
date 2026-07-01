@@ -24,7 +24,10 @@ const debutKey = sql<string>`(${besoin.date} || 'T' || ${besoin.heureDebut})`;
  * Postes **libres, futurs, éligibles** au niveau de l'intervenant (CDC §4.2, handoff).
  * Triés par date puis heure. Le regroupement par jour se fait à l'affichage.
  */
-export async function listerCreneaux(niveauUser: Niveau | null): Promise<CreneauView[]> {
+export async function listerCreneaux(
+	niveauUser: Niveau | null,
+	userId?: string
+): Promise<CreneauView[]> {
 	const niveaux = niveauxVisibles(niveauUser);
 	if (niveaux.length === 0) return [];
 
@@ -46,12 +49,21 @@ export async function listerCreneaux(niveauUser: Niveau | null): Promise<Creneau
 		.where(and(isNull(poste.reservedBy), inArray(poste.niveauRequis, niveaux), gt(debutKey, now)))
 		.orderBy(besoin.date, besoin.heureDebut, poste.niveauRequis);
 
-	return rows;
+	if (!userId) return rows;
+
+	// Masque les postes d'un besoin où l'intervenant détient déjà un poste :
+	// il ne peut pas en tenir deux (cohérent avec le garde-fou de réservation).
+	const dejaReserves = await db
+		.select({ besoinId: poste.besoinId })
+		.from(poste)
+		.where(eq(poste.reservedBy, userId));
+	const exclus = new Set(dejaReserves.map((r) => r.besoinId));
+	return exclus.size ? rows.filter((r) => !exclus.has(r.besoinId)) : rows;
 }
 
 export type ReservationResult =
 	| { ok: true }
-	| { ok: false; reason: 'introuvable' | 'ineligible' | 'passe' | 'deja_pris' };
+	| { ok: false; reason: 'introuvable' | 'ineligible' | 'passe' | 'deja_pris' | 'deja_sur_besoin' };
 
 /**
  * Réservation **atomique** « premier arrivé, premier servi » (CDC §9 — point critique).
@@ -69,6 +81,7 @@ export async function reserverPoste(
 	return db.transaction(async (tx) => {
 		const p = await tx
 			.select({
+				besoinId: poste.besoinId,
 				niveauRequis: poste.niveauRequis,
 				date: besoin.date,
 				heureDebut: besoin.heureDebut
@@ -81,6 +94,15 @@ export async function reserverPoste(
 		if (!p) return { ok: false, reason: 'introuvable' as const };
 		if (!estEligible(niveauUser, p.niveauRequis)) return { ok: false, reason: 'ineligible' as const };
 		if (posteKey(p.date, p.heureDebut) <= parisNowKey()) return { ok: false, reason: 'passe' as const };
+
+		// Un intervenant ne peut pas tenir deux postes du **même besoin** (double
+		// comptage d'heures impossible physiquement).
+		const dejaSurBesoin = await tx
+			.select({ id: poste.id })
+			.from(poste)
+			.where(and(eq(poste.besoinId, p.besoinId), eq(poste.reservedBy, userId)))
+			.get();
+		if (dejaSurBesoin) return { ok: false, reason: 'deja_sur_besoin' as const };
 
 		const res = await tx
 			.update(poste)

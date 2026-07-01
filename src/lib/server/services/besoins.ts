@@ -261,7 +261,10 @@ export async function supprimerPoste(posteId: string): Promise<boolean> {
 
 export type AssignationResult =
 	| { ok: true }
-	| { ok: false; reason: 'introuvable' | 'intervenant_invalide' | 'ineligible' | 'deja_pris' };
+	| {
+			ok: false;
+			reason: 'introuvable' | 'intervenant_invalide' | 'ineligible' | 'deja_pris' | 'deja_sur_besoin';
+	  };
 
 /**
  * **Assigne** manuellement un intervenant à un poste libre (admin, CDC §6.2).
@@ -291,6 +294,14 @@ export async function assignerPoste(
 		if (!estEligible(u.niveau, p.niveauRequis)) {
 			return { ok: false, reason: 'ineligible' as const };
 		}
+
+		// Un intervenant ne peut pas occuper deux postes du même besoin.
+		const dejaSurBesoin = await tx
+			.select({ id: poste.id })
+			.from(poste)
+			.where(and(eq(poste.besoinId, p.besoinId), eq(poste.reservedBy, intervenantId)))
+			.get();
+		if (dejaSurBesoin) return { ok: false, reason: 'deja_sur_besoin' as const };
 
 		const res = await tx
 			.update(poste)

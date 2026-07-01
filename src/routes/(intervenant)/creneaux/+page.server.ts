@@ -6,7 +6,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = requireIntervenant(locals.user);
-	const creneaux = await listerCreneaux(user.niveau);
+	const creneaux = await listerCreneaux(user.niveau, user.id);
 	return { creneaux, niveau: user.niveau, directeurTel: env.PUBLIC_DIRECTEUR_TEL ?? '' };
 };
 
@@ -14,7 +14,8 @@ const messages: Record<string, string> = {
 	introuvable: 'Ce créneau n’existe plus.',
 	ineligible: 'Ce créneau ne correspond pas à votre niveau.',
 	passe: 'Ce créneau est déjà passé.',
-	deja_pris: 'Ce créneau vient d’être réservé.'
+	deja_pris: 'Ce créneau vient d’être réservé.',
+	deja_sur_besoin: 'Vous avez déjà un poste sur ce créneau.'
 };
 
 export const actions: Actions = {
