@@ -1,10 +1,17 @@
 import { z } from 'zod';
 import { PASSWORD_MIN_LENGTH } from './auth/password';
+import { decompteHeures } from '$lib/heures';
 
 /** Validations Zod réutilisées par les form actions (CDC §8 — Zod sur toutes les entrées). */
 
 const dateISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (AAAA-MM-JJ)');
 const heure = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Heure invalide (HH:MM)');
+/** Heure de pause optionnelle : `HH:MM`, chaîne vide ou absente → `null`. */
+const heureOptionnelle = heure
+	.or(z.literal(''))
+	.nullish()
+	.transform((v) => (v ? v : null));
+
 const dateOptionnelle = z
 	.string()
 	.trim()
@@ -31,12 +38,19 @@ export const besoinBase = z
 		path: ['heureFin']
 	});
 
-/** Création de besoin : + nombre de postes MNS / BNSSA (≥ 1 poste au total). */
+/**
+ * Besoin (création **et** édition) : entête + pause optionnelle + nombre de postes.
+ * Règles de pause (CDC — pause à horaire précis déduite du temps effectif) :
+ * les deux champs ensemble ou aucun ; pause dans [début, fin] ; fin > début ;
+ * temps de travail effectif strictement positif.
+ */
 export const besoinCreate = z
 	.object({
 		date: dateISO,
 		heureDebut: heure,
 		heureFin: heure,
+		pauseDebut: heureOptionnelle,
+		pauseFin: heureOptionnelle,
 		commentaire: z
 			.string()
 			.trim()
@@ -53,6 +67,23 @@ export const besoinCreate = z
 	.refine((d) => d.nbMns + d.nbBnssa >= 1, {
 		message: 'Au moins un poste (MNS ou BNSSA) est requis',
 		path: ['nbBnssa']
+	})
+	.refine((d) => !!d.pauseDebut === !!d.pauseFin, {
+		message: 'Renseignez le début ET la fin de la pause, ou aucun des deux.',
+		path: ['pauseFin']
+	})
+	.refine(
+		(d) =>
+			!d.pauseDebut || !d.pauseFin || (d.pauseDebut >= d.heureDebut && d.pauseFin <= d.heureFin),
+		{ message: 'La pause doit être comprise dans le créneau.', path: ['pauseDebut'] }
+	)
+	.refine((d) => !d.pauseDebut || !d.pauseFin || d.pauseFin > d.pauseDebut, {
+		message: 'La fin de pause doit être après le début de pause.',
+		path: ['pauseFin']
+	})
+	.refine((d) => decompteHeures(d.heureDebut, d.heureFin, d.pauseDebut, d.pauseFin).effectif > 0, {
+		message: 'Le temps de travail effectif doit être positif.',
+		path: ['pauseFin']
 	});
 
 /** Intervenant (création/édition) — hors mot de passe. */

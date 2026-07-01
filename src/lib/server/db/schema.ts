@@ -70,6 +70,10 @@ export const besoin = sqliteTable('besoin', {
 	heureDebut: text('heure_debut').notNull(),
 	/** `HH:MM`. */
 	heureFin: text('heure_fin').notNull(),
+	/** Début de pause `HH:MM` — nullable. Renseigné avec {@link pauseFin} ou aucun. */
+	pauseDebut: text('pause_debut'),
+	/** Fin de pause `HH:MM` — nullable. La pause est déduite du temps effectif. */
+	pauseFin: text('pause_fin'),
 	commentaire: text('commentaire'),
 	createdBy: text('created_by')
 		.notNull()

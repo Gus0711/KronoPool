@@ -10,9 +10,19 @@ export const GET: RequestHandler = async ({ url }) => {
 	const to = clean(url.searchParams.get('to'));
 	const lignes = await recapGlobal(from, to);
 
-	const rows: (string | number)[][] = [['Nom', 'Prénom', 'Niveau', 'Créneaux', 'Heures']];
+	const dec = (h: number) => h.toFixed(2).replace('.', ',');
+	const rows: (string | number)[][] = [
+		['Nom', 'Prénom', 'Niveau', 'Créneaux', 'Amplitude (h)', 'Temps de travail effectif (h)']
+	];
 	for (const l of lignes) {
-		rows.push([l.nom, l.prenom, l.niveau ?? '', l.nbCreneaux, l.totalHeures.toFixed(2).replace('.', ',')]);
+		rows.push([
+			l.nom,
+			l.prenom,
+			l.niveau ?? '',
+			l.nbCreneaux,
+			dec(l.amplitudeHeures),
+			dec(l.totalHeures)
+		]);
 	}
 
 	const suffixe = from || to ? `_${from ?? 'debut'}_${to ?? 'fin'}` : '';

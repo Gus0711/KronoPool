@@ -50,6 +50,19 @@
 				<input class="field" type="time" name="heureFin" value={v('heureFin')} required />
 			</label>
 		</div>
+		<div class="flex gap-3">
+			<label class="flex flex-1 flex-col gap-1">
+				<span class="text-[13px] font-semibold text-ink">Pause début (optionnel)</span>
+				<input class="field" type="time" name="pauseDebut" value={v('pauseDebut')} />
+			</label>
+			<label class="flex flex-1 flex-col gap-1">
+				<span class="text-[13px] font-semibold text-ink">Pause fin (optionnel)</span>
+				<input class="field" type="time" name="pauseFin" value={v('pauseFin')} />
+			</label>
+		</div>
+		<p class="-mt-2 text-[12px] text-muted">
+			Renseignez les deux (ou aucun) pour déduire la pause du temps de travail effectif.
+		</p>
 		<label class="flex flex-col gap-1">
 			<span class="text-[13px] font-semibold text-ink">Commentaire (optionnel)</span>
 			<input class="field" type="text" name="commentaire" value={v('commentaire')} placeholder="Ex : Bassin sportif · renfort matin" />

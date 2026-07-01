@@ -12,6 +12,8 @@ export interface CreneauView {
 	date: string; // YYYY-MM-DD
 	heureDebut: string; // HH:MM
 	heureFin: string; // HH:MM
+	pauseDebut: string | null; // HH:MM
+	pauseFin: string | null; // HH:MM
 	commentaire: string | null;
 }
 
@@ -35,6 +37,8 @@ export async function listerCreneaux(niveauUser: Niveau | null): Promise<Creneau
 			date: besoin.date,
 			heureDebut: besoin.heureDebut,
 			heureFin: besoin.heureFin,
+			pauseDebut: besoin.pauseDebut,
+			pauseFin: besoin.pauseFin,
 			commentaire: besoin.commentaire
 		})
 		.from(poste)

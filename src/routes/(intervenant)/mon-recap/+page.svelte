@@ -4,8 +4,9 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import HoursGauge from '$lib/components/HoursGauge.svelte';
 	import { ripple } from '$lib/actions/ripple';
-	import { formatJour, formatDuree } from '$lib/format';
-	import { Download } from 'lucide-svelte';
+	import { formatJour, formatDuree, formatAmplitude, formatHeure } from '$lib/format';
+	import { aPause } from '$lib/heures';
+	import { Download, Coffee } from 'lucide-svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -56,13 +57,23 @@
 				class="card-lagon enter-rise mb-3 flex items-center justify-between"
 				style="animation-delay:{Math.min(i * 40, 320)}ms"
 			>
-				<div>
+				<div class="min-w-0">
 					<div class="font-display text-[15px] font-bold text-ink">{formatJour(l.date)}</div>
-					<div class="mt-0.5 text-[13px] text-muted">{l.heureDebut} – {l.heureFin}</div>
+					<div class="mt-0.5 text-[13px] text-muted">{formatAmplitude(l.heureDebut, l.heureFin)}</div>
+					{#if aPause(l.pauseDebut, l.pauseFin)}
+						<div class="mt-0.5 flex items-center gap-1 text-[12px] font-medium text-sand-dark">
+							<Coffee size={12} class="shrink-0" /> Pause {formatHeure(l.pauseDebut!)}–{formatHeure(l.pauseFin!)}
+						</div>
+					{/if}
 				</div>
 				<div class="flex items-center gap-3">
 					<NiveauBadge niveau={l.niveauRequis} />
-					<span class="font-display text-[15px] font-bold text-teal">{formatDuree(l.dureeHeures)}</span>
+					<div class="text-right">
+						<div class="font-display text-[15px] font-bold text-teal">{formatDuree(l.effectif)}</div>
+						{#if aPause(l.pauseDebut, l.pauseFin)}
+							<div class="text-[11px] text-muted">brut {formatDuree(l.amplitude)}</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 		{/each}

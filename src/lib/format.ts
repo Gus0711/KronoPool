@@ -2,6 +2,8 @@
  * Formatage d'affichage (français, Europe/Paris). Pur & isomorphe (client + serveur).
  */
 
+import { decompteHeures, aPause } from '$lib/heures';
+
 /** `2025-07-05` → `Samedi 5 juillet` (première lettre capitalisée). */
 export function formatJour(dateISO: string): string {
 	const d = new Date(`${dateISO}T12:00:00`);
@@ -30,6 +32,55 @@ export function formatDuree(heures: number): string {
 	const h = Math.floor(totalMin / 60);
 	const m = totalMin % 60;
 	return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`;
+}
+
+/** `09:00` → `09h00` (style horaire français). */
+export function formatHeure(hhmm: string): string {
+	return hhmm.replace(':', 'h');
+}
+
+/** `08:00`, `18:00` → `08h00–18h00` (amplitude affichée). */
+export function formatAmplitude(heureDebut: string, heureFin: string): string {
+	return `${formatHeure(heureDebut)}–${formatHeure(heureFin)}`;
+}
+
+/**
+ * Ligne descriptive du temps de travail d'un créneau (source unique : {@link decompteHeures}).
+ * - avec pause : `Pause : 12h30–13h30, soit 9 h de travail effectif`
+ * - sans pause : `10 h`
+ */
+export function formatEffectif(
+	heureDebut: string,
+	heureFin: string,
+	pauseDebut?: string | null,
+	pauseFin?: string | null
+): string {
+	const { amplitude, effectif } = decompteHeures(heureDebut, heureFin, pauseDebut, pauseFin);
+	if (aPause(pauseDebut, pauseFin)) {
+		return `Pause : ${formatHeure(pauseDebut as string)}–${formatHeure(
+			pauseFin as string
+		)}, soit ${formatDuree(effectif)} de travail effectif`;
+	}
+	return formatDuree(amplitude);
+}
+
+/**
+ * Représentation complète sur une ligne (ex. affichage intervenant, exports) :
+ * - avec pause : `08h00–18h00 (Pause : 12h30–13h30, soit 9 h de travail effectif)`
+ * - sans pause : `08h00–18h00 (10 h)`
+ */
+export function formatCreneauComplet(
+	heureDebut: string,
+	heureFin: string,
+	pauseDebut?: string | null,
+	pauseFin?: string | null
+): string {
+	return `${formatAmplitude(heureDebut, heureFin)} (${formatEffectif(
+		heureDebut,
+		heureFin,
+		pauseDebut,
+		pauseFin
+	)})`;
 }
 
 /** Initiales à partir de prénom/nom (avatar). */

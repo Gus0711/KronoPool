@@ -1,7 +1,8 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { besoin, poste, user } from '../db/schema';
-import { parisNowKey, posteKey, dureeHeures } from '../time';
+import { parisNowKey, posteKey } from '../time';
+import { decompteHeures } from '$lib/heures';
 
 export interface LigneRecapGlobal {
 	intervenantId: string;
@@ -9,6 +10,9 @@ export interface LigneRecapGlobal {
 	prenom: string;
 	niveau: string | null;
 	nbCreneaux: number;
+	/** Amplitude brute cumulée (pauses **incluses**), heures décimales. */
+	amplitudeHeures: number;
+	/** Temps de travail effectif cumulé (pauses **déduites**) — total du récap. */
 	totalHeures: number;
 }
 
@@ -29,7 +33,9 @@ export async function recapGlobal(from?: string, to?: string): Promise<LigneReca
 			niveau: user.niveau,
 			date: besoin.date,
 			heureDebut: besoin.heureDebut,
-			heureFin: besoin.heureFin
+			heureFin: besoin.heureFin,
+			pauseDebut: besoin.pauseDebut,
+			pauseFin: besoin.pauseFin
 		})
 		.from(poste)
 		.innerJoin(besoin, eq(poste.besoinId, besoin.id))
@@ -50,10 +56,18 @@ export async function recapGlobal(from?: string, to?: string): Promise<LigneReca
 				prenom: r.prenom,
 				niveau: r.niveau,
 				nbCreneaux: 0,
+				amplitudeHeures: 0,
 				totalHeures: 0
 			} satisfies LigneRecapGlobal);
+		const { amplitude, effectif } = decompteHeures(
+			r.heureDebut,
+			r.heureFin,
+			r.pauseDebut,
+			r.pauseFin
+		);
 		entry.nbCreneaux += 1;
-		entry.totalHeures += dureeHeures(r.heureDebut, r.heureFin);
+		entry.amplitudeHeures += amplitude;
+		entry.totalHeures += effectif;
 		map.set(r.intervenantId, entry);
 	}
 	return [...map.values()];

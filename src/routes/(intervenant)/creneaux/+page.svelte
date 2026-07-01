@@ -7,7 +7,7 @@
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
-	import { formatJour, formatPlage } from '$lib/format';
+	import { formatJour, formatPlage, formatEffectif } from '$lib/format';
 	import { ShieldAlert, Phone } from 'lucide-svelte';
 	import type { Niveau } from '$lib/server/db/schema';
 	import type { PageData } from './$types';
@@ -78,6 +78,8 @@
 					heureDebut={c.heureDebut}
 					heureFin={c.heureFin}
 					niveau={c.niveauRequis}
+					pauseDebut={c.pauseDebut}
+					pauseFin={c.pauseFin}
 					commentaire={c.commentaire}
 					delay={Math.min((ji * 2 + ci) * 45, 360)}
 				>
@@ -109,6 +111,9 @@
 			</div>
 			<div class="mt-1 text-[13px] font-medium capitalize text-teal">
 				{formatJour(pending.date)}
+			</div>
+			<div class="mt-1 text-[12.5px] font-medium text-muted">
+				{formatEffectif(pending.heureDebut, pending.heureFin, pending.pauseDebut, pending.pauseFin)}
 			</div>
 			{#if pending.commentaire}
 				<div class="mt-1 text-[13px] text-muted">{pending.commentaire}</div>

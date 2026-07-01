@@ -91,6 +91,8 @@ export const actions: Actions = {
 			date: form.get('date'),
 			heureDebut: form.get('heureDebut'),
 			heureFin: form.get('heureFin'),
+			pauseDebut: form.get('pauseDebut'),
+			pauseFin: form.get('pauseFin'),
 			commentaire: form.get('commentaire'),
 			nbMns: form.get('nbMns'),
 			nbBnssa: form.get('nbBnssa')

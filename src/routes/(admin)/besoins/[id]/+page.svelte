@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import { toasts } from '$lib/toast';
-	import { formatJour, formatPlage } from '$lib/format';
+	import { formatJour, formatPlage, formatEffectif } from '$lib/format';
 	import { ArrowLeft, Pencil, Trash2, Unlock, Phone, UserPlus } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
 
@@ -55,6 +55,7 @@
 		<div class="text-[14px] text-muted">
 			{formatPlage(d.heureDebut, d.heureFin)}
 			· {d.pourvus}/{d.total} pourvus · {statutLabel[d.statut]}
+			<br />{formatEffectif(d.heureDebut, d.heureFin, d.pauseDebut, d.pauseFin)}
 			{#if d.commentaire}<br />{d.commentaire}{/if}
 		</div>
 	</div>
@@ -91,6 +92,19 @@
 					<input class="field" type="time" name="heureFin" value={d.heureFin} required />
 				</label>
 			</div>
+			<div class="flex gap-3">
+				<label class="flex flex-1 flex-col gap-1">
+					<span class="text-[13px] font-semibold text-ink">Pause début</span>
+					<input class="field" type="time" name="pauseDebut" value={d.pauseDebut ?? ''} />
+				</label>
+				<label class="flex flex-1 flex-col gap-1">
+					<span class="text-[13px] font-semibold text-ink">Pause fin</span>
+					<input class="field" type="time" name="pauseFin" value={d.pauseFin ?? ''} />
+				</label>
+			</div>
+			<p class="-mt-1 text-[12px] text-muted">
+				Les deux champs ensemble (ou aucun) — la pause est déduite du temps de travail effectif.
+			</p>
 			<label class="flex flex-col gap-1">
 				<span class="text-[13px] font-semibold text-ink">Commentaire</span>
 				<input class="field" type="text" name="commentaire" value={d.commentaire ?? ''} />

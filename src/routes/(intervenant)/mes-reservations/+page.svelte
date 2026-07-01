@@ -61,6 +61,8 @@
 				heureDebut={r.heureDebut}
 				heureFin={r.heureFin}
 				niveau={r.niveauRequis}
+				pauseDebut={r.pauseDebut}
+				pauseFin={r.pauseFin}
 				commentaire={r.commentaire}
 				muted={onglet === 'passees'}
 				delay={Math.min(i * 45, 360)}

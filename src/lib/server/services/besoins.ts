@@ -11,6 +11,8 @@ export interface BesoinResume {
 	date: string;
 	heureDebut: string;
 	heureFin: string;
+	pauseDebut: string | null;
+	pauseFin: string | null;
 	commentaire: string | null;
 	total: number;
 	pourvus: number;
@@ -39,6 +41,8 @@ export async function creerBesoin(
 		date: string;
 		heureDebut: string;
 		heureFin: string;
+		pauseDebut: string | null;
+		pauseFin: string | null;
 		commentaire: string | null;
 		nbMns: number;
 		nbBnssa: number;
@@ -51,6 +55,8 @@ export async function creerBesoin(
 			date: data.date,
 			heureDebut: data.heureDebut,
 			heureFin: data.heureFin,
+			pauseDebut: data.pauseDebut,
+			pauseFin: data.pauseFin,
 			commentaire: data.commentaire,
 			createdBy: adminId
 		});
@@ -72,6 +78,8 @@ export async function listerBesoins(): Promise<{ aVenir: BesoinResume[]; passes:
 			date: besoin.date,
 			heureDebut: besoin.heureDebut,
 			heureFin: besoin.heureFin,
+			pauseDebut: besoin.pauseDebut,
+			pauseFin: besoin.pauseFin,
 			commentaire: besoin.commentaire,
 			total: sql<number>`count(${poste.id})`,
 			pourvus: sql<number>`count(${poste.reservedBy})`
@@ -140,6 +148,8 @@ export async function detailBesoin(id: string): Promise<BesoinDetail | null> {
 		date: b.date,
 		heureDebut: b.heureDebut,
 		heureFin: b.heureFin,
+		pauseDebut: b.pauseDebut,
+		pauseFin: b.pauseFin,
 		commentaire: b.commentaire,
 		total,
 		pourvus,
@@ -173,6 +183,8 @@ export async function modifierBesoin(
 		date: string;
 		heureDebut: string;
 		heureFin: string;
+		pauseDebut: string | null;
+		pauseFin: string | null;
 		commentaire: string | null;
 		nbMns: number;
 		nbBnssa: number;
@@ -216,6 +228,8 @@ export async function modifierBesoin(
 				date: data.date,
 				heureDebut: data.heureDebut,
 				heureFin: data.heureFin,
+				pauseDebut: data.pauseDebut,
+				pauseFin: data.pauseFin,
 				commentaire: data.commentaire,
 				updatedAt: new Date()
 			})
