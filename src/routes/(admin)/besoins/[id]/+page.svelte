@@ -22,6 +22,10 @@
 			toasts.success('Besoin mis à jour ✓');
 			showEdit = false;
 		}
+		if (form?.action === 'supprimerPoste') {
+			if (form.ok) toasts.success('Poste supprimé ✓');
+			else toasts.error('Ce poste est réservé : libérez-le avant de le supprimer.');
+		}
 	});
 
 	const statutLabel: Record<string, string> = { avenir: 'À venir', complet: 'Complet', passe: 'Passé' };
@@ -134,6 +138,13 @@
 					<input type="hidden" name="posteId" value={p.id} />
 					<button class="inline-flex items-center gap-1.5 rounded-cta border border-card-border bg-white px-3 py-2 text-[13px] font-semibold text-teal" type="submit">
 						<Unlock size={15} /> Libérer
+					</button>
+				</form>
+			{:else}
+				<form method="POST" action="?/supprimerPoste" use:enhance>
+					<input type="hidden" name="posteId" value={p.id} />
+					<button class="inline-flex items-center gap-1.5 rounded-cta border border-danger/30 bg-danger-bg px-3 py-2 text-[13px] font-semibold text-danger" type="submit">
+						<Trash2 size={15} /> Supprimer
 					</button>
 				</form>
 			{/if}

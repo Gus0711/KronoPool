@@ -230,6 +230,21 @@ export async function supprimerBesoin(id: string): Promise<void> {
 }
 
 /**
+ * Supprime un **poste** individuel — uniquement s'il est **libre**. Un poste
+ * réservé doit d'abord être libéré (CDC : pas de suppression silencieuse d'une
+ * réservation).
+ * @returns `true` si un poste libre a bien été supprimé.
+ */
+export async function supprimerPoste(posteId: string): Promise<boolean> {
+	return db.transaction(async (tx) => {
+		const p = await tx.select().from(poste).where(eq(poste.id, posteId)).get();
+		if (!p || p.reservedBy) return false;
+		await tx.delete(poste).where(eq(poste.id, posteId));
+		return true;
+	});
+}
+
+/**
  * **Libère** un poste réservé (admin uniquement, CDC §6.2) : remet `reserved_by`
  * à `null` et trace l'opération dans `audit_log`.
  * @returns `true` si un poste réservé a bien été libéré.

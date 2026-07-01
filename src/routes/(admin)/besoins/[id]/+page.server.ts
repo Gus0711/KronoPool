@@ -5,7 +5,8 @@ import {
 	detailBesoin,
 	libererPoste,
 	modifierBesoin,
-	supprimerBesoin
+	supprimerBesoin,
+	supprimerPoste
 } from '$lib/server/services/besoins';
 import { besoinCreate } from '$lib/server/validation';
 import type { Actions, PageServerLoad } from './$types';
@@ -27,6 +28,18 @@ export const actions: Actions = {
 
 		const ok = await libererPoste(admin.id, parsed.data.posteId);
 		return { action: 'liberer', ok };
+	},
+
+	supprimerPoste: async ({ request, locals }) => {
+		requireAdmin(locals.user);
+		const form = await request.formData();
+		const parsed = z.object({ posteId: z.string().min(1) }).safeParse({
+			posteId: form.get('posteId')
+		});
+		if (!parsed.success) return fail(400, { action: 'supprimerPoste', error: 'Requête invalide.' });
+
+		const ok = await supprimerPoste(parsed.data.posteId);
+		return { action: 'supprimerPoste', ok };
 	},
 
 	modifier: async ({ request, locals, params }) => {
