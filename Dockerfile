@@ -8,7 +8,9 @@ RUN npm ci
 
 # Source + build (adapter-node → ./build). Puis on retire les devDependencies.
 COPY . .
-RUN npm run build && npm prune --omit=dev
+# Filet de sécurité : ./data doit exister au cas où un module serveur tenterait
+# d'ouvrir la base pendant l'analyse du build (la connexion est normalement lazy).
+RUN mkdir -p ./data && npm run build && npm prune --omit=dev
 
 # --- Runtime -------------------------------------------------------------
 FROM node:22-slim AS runner
