@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { ArrowLeft } from 'lucide-svelte';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 	let loading = $state(false);
-	const v = (k: string) => (form?.values?.[k] as string) ?? '';
+	// Valeur d'un champ : priorité aux valeurs re-soumises (après erreur), sinon
+	// pré-remplissage issu du planning (paramètres d'URL).
+	const v = (k: string) =>
+		(form?.values?.[k] as string) ?? (data.defaults[k as keyof typeof data.defaults] ?? '');
 </script>
 
 <svelte:head><title>Nouveau besoin · KronoPool</title></svelte:head>

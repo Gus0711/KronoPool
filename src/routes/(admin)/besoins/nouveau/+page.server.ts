@@ -2,7 +2,20 @@ import { fail, redirect } from '@sveltejs/kit';
 import { requireAdmin } from '$lib/server/auth/guards';
 import { creerBesoin } from '$lib/server/services/besoins';
 import { besoinCreate } from '$lib/server/validation';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
+
+const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+const heureRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+const clean = (v: string | null, re: RegExp) => (v && re.test(v) ? v : '');
+
+/** Pré-remplissage depuis le planning (clic sur un créneau) via les paramètres d'URL. */
+export const load: PageServerLoad = ({ url }) => ({
+	defaults: {
+		date: clean(url.searchParams.get('date'), dateRe),
+		heureDebut: clean(url.searchParams.get('debut'), heureRe),
+		heureFin: clean(url.searchParams.get('fin'), heureRe)
+	}
+});
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {

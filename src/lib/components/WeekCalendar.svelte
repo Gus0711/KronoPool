@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
 	import {
 		isoDate,
 		parseISO,
@@ -70,6 +71,29 @@
 	}
 	function hauteurPx(startMin: number, endMin: number): number {
 		return Math.max(22, ((endMin - startMin) / 60) * PX_PAR_HEURE);
+	}
+
+	function hhmm(min: number): string {
+		const h = Math.floor(min / 60);
+		const m = min % 60;
+		return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+	}
+
+	// Clic sur une zone libre de la grille → création pré-remplie (façon Google Agenda).
+	// L'heure est déduite de la position verticale du clic, arrondie à 30 min, +1h par défaut.
+	function creerSurCreneau(e: MouseEvent, jour: Date) {
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const y = e.clientY - rect.top;
+		const brut = plage.startH * 60 + (y / PX_PAR_HEURE) * 60;
+		const arrondi = Math.round(brut / 30) * 30;
+		const maxDebut = plage.endH * 60 - 60;
+		const debut = Math.min(Math.max(arrondi, plage.startH * 60), maxDebut);
+		const params = new URLSearchParams({
+			date: isoDate(jour),
+			debut: hhmm(debut),
+			fin: hhmm(debut + 60)
+		});
+		goto(`/besoins/nouveau?${params.toString()}`);
 	}
 
 	function semainePrec() {
@@ -153,6 +177,14 @@
 					{#each heures as h (h)}
 						<div class="border-t border-card-border/70" style="height:{PX_PAR_HEURE}px"></div>
 					{/each}
+
+					<!-- Zone cliquable de fond : crée un besoin pré-rempli au créneau cliqué -->
+					<button
+						type="button"
+						class="absolute inset-0 h-full w-full cursor-copy"
+						onclick={(e) => creerSurCreneau(e, jour)}
+						aria-label="Créer un besoin le {isoDate(jour)}"
+					></button>
 
 					<!-- Événements -->
 					{#each evs as ev (ev.id)}
