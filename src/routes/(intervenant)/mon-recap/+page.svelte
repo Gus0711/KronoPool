@@ -1,6 +1,9 @@
 <script lang="ts">
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import HoursGauge from '$lib/components/HoursGauge.svelte';
+	import { ripple } from '$lib/actions/ripple';
 	import { formatJour, formatDuree } from '$lib/format';
 	import { Download } from 'lucide-svelte';
 	import type { PageData } from './$types';
@@ -31,21 +34,28 @@
 		</button>
 	</form>
 
-	<div class="card-lagon mb-4 text-center">
-		<div class="text-[13px] font-medium text-muted">Total sur la période</div>
-		<div class="mt-1 font-display text-[40px] font-bold leading-none text-teal">
-			{formatDuree(data.recap.total)}
-		</div>
-		<a href={exportHref} class="cta-sand mt-4 inline-flex items-center justify-center gap-2" data-sveltekit-reload>
+	<div class="card-lagon mb-4 py-6 text-center">
+		<HoursGauge value={formatDuree(data.recap.total)} />
+		<a
+			href={exportHref}
+			class="cta-sand mt-6 inline-flex items-center justify-center gap-2"
+			data-sveltekit-reload
+			use:ripple
+		>
 			<Download size={18} /> Exporter en CSV
 		</a>
 	</div>
 
 	{#if data.recap.lignes.length === 0}
-		<p class="mt-10 text-center text-[14px] text-muted">Aucun créneau sur cette période.</p>
+		<EmptyState illus="vagues" title="Aucun créneau sur cette période">
+			Ajustez les dates ci-dessus pour élargir la recherche.
+		</EmptyState>
 	{:else}
-		{#each data.recap.lignes as l (l.posteId)}
-			<div class="card-lagon mb-3 flex items-center justify-between">
+		{#each data.recap.lignes as l, i (l.posteId)}
+			<div
+				class="card-lagon enter-rise mb-3 flex items-center justify-between"
+				style="animation-delay:{Math.min(i * 40, 320)}ms"
+			>
 				<div>
 					<div class="font-display text-[15px] font-bold text-ink">{formatJour(l.date)}</div>
 					<div class="mt-0.5 text-[13px] text-muted">{l.heureDebut} – {l.heureFin}</div>

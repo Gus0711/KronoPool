@@ -2,6 +2,7 @@
 	import BesoinRow from '$lib/components/BesoinRow.svelte';
 	import ValiditePill from '$lib/components/ValiditePill.svelte';
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
+	import { ripple } from '$lib/actions/ripple';
 	import { CalendarClock, AlertTriangle, PlusCircle } from 'lucide-svelte';
 	import type { PageData } from './$types';
 
@@ -10,9 +11,9 @@
 
 <svelte:head><title>Tableau de bord · KronoPool</title></svelte:head>
 
-<div class="mb-6 flex items-center justify-between">
+<div class="mb-6 flex items-center justify-between gap-3">
 	<h1 class="font-display text-[24px] font-bold text-ink">Tableau de bord</h1>
-	<a href="/besoins/nouveau" class="cta-sand inline-flex w-auto items-center gap-2 px-4">
+	<a href="/besoins/nouveau" class="cta-sand inline-flex w-auto items-center gap-2 px-4" use:ripple>
 		<PlusCircle size={18} /> Nouveau besoin
 	</a>
 </div>

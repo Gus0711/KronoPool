@@ -2,6 +2,8 @@
 	import { enhance } from '$app/forms';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CreneauCard from '$lib/components/CreneauCard.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
 	import { formatJour } from '$lib/format';
 	import type { Niveau } from '$lib/server/db/schema';
@@ -49,18 +51,19 @@
 
 <div class="flex-1 overflow-y-auto px-5 pb-6 pt-[6px]">
 	{#if parJour.length === 0}
-		<p class="mt-16 text-center text-[14px] text-muted">
-			Aucun créneau disponible pour le moment.
-		</p>
+		<EmptyState illus="bouee" title="Le bassin est calme">
+			Aucun créneau disponible pour le moment. Repassez un peu plus tard&nbsp;!
+		</EmptyState>
 	{:else}
-		{#each parJour as [jour, liste] (jour)}
+		{#each parJour as [jour, liste], ji (jour)}
 			<div class="daylabel">{formatJour(jour)}</div>
-			{#each liste as c (c.posteId)}
+			{#each liste as c, ci (c.posteId)}
 				<CreneauCard
 					heureDebut={c.heureDebut}
 					heureFin={c.heureFin}
 					niveau={c.niveauRequis}
 					commentaire={c.commentaire}
+					delay={Math.min((ji * 2 + ci) * 45, 360)}
 				>
 					{#snippet action()}
 						<form
@@ -78,7 +81,9 @@
 							}}
 						>
 							<input type="hidden" name="posteId" value={c.posteId} />
-							<button class="cta-sand mt-[14px]" type="submit">Réserver ce créneau</button>
+							<button class="cta-sand mt-[14px]" type="submit" use:ripple>
+								Réserver ce créneau
+							</button>
 						</form>
 					{/snippet}
 				</CreneauCard>

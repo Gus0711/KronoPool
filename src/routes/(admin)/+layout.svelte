@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { initiales } from '$lib/format';
 	import { fly, fade } from 'svelte/transition';
+	import WaterWaves from '$lib/components/WaterWaves.svelte';
 	import {
 		LayoutDashboard,
 		CalendarClock,
@@ -44,11 +45,12 @@
 	}}
 />
 
-<div class="flex min-h-[100dvh] bg-bg">
+<div class="app-water-bg flex min-h-[100dvh]">
 	<!-- Sidebar desktop -->
-	<aside class="hidden w-60 shrink-0 flex-col bg-lagon p-4 text-white md:flex">
-		<div class="px-2 py-3 font-display text-[18px] font-bold tracking-[.02em]">KronoPool</div>
-		<nav class="mt-4 flex flex-col gap-1">
+	<aside class="relative hidden w-60 shrink-0 flex-col overflow-hidden bg-lagon p-4 text-white md:flex">
+		<div class="caustics"></div>
+		<div class="relative px-2 py-3 font-display text-[18px] font-bold tracking-[.02em]">KronoPool</div>
+		<nav class="relative mt-4 flex flex-col gap-1">
 			{#each links as l (l.href)}
 				{@const active = isActive(l.href, $page.url.pathname)}
 				<a
@@ -62,7 +64,7 @@
 				</a>
 			{/each}
 		</nav>
-		<div class="mt-auto border-t border-white/15 pt-3">
+		<div class="relative mt-auto border-t border-white/15 pt-3">
 			<a href="/compte" class="flex items-center gap-2 rounded-cta px-3 py-2 text-[13px] hover:bg-white/10">
 				<UserCircle size={18} />
 				<span class="truncate">{data.user.prenom} {data.user.nom}</span>
@@ -76,20 +78,22 @@
 	<!-- Zone principale -->
 	<div class="flex min-w-0 flex-1 flex-col">
 		<!-- Top bar mobile : hamburger + titre + accès compte -->
-		<header class="flex items-center gap-3 bg-lagon px-4 py-3 text-white md:hidden">
+		<header class="relative flex items-center gap-3 overflow-hidden bg-lagon px-4 pb-5 pt-3 text-white md:hidden">
+			<div class="caustics"></div>
+			<WaterWaves />
 			<button
 				type="button"
-				class="-ml-1 flex h-9 w-9 items-center justify-center rounded-cta hover:bg-white/10"
+				class="relative -ml-1 flex h-9 w-9 items-center justify-center rounded-cta hover:bg-white/10"
 				onclick={() => (menuOpen = true)}
 				aria-label="Ouvrir le menu"
 				aria-expanded={menuOpen}
 			>
 				<Menu size={22} />
 			</button>
-			<span class="font-display text-[16px] font-bold">KronoPool</span>
+			<span class="relative font-display text-[16px] font-bold">KronoPool</span>
 			<a
 				href="/compte"
-				class="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-[12px] font-bold"
+				class="relative ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-[12px] font-bold"
 				aria-label="Mon compte"
 			>
 				{initiales(data.user.prenom, data.user.nom)}

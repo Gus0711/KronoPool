@@ -21,11 +21,16 @@
 		{@const active = isActive(item.href, $page.url.pathname)}
 		<a
 			href={item.href}
-			class="flex flex-1 flex-col items-center gap-1 text-[10px] font-semibold"
+			class="flex flex-1 flex-col items-center gap-1 text-[10px] font-semibold transition-colors"
 			style="color:{active ? '#155e75' : '#9db4b9'}"
 			aria-current={active ? 'page' : undefined}
 		>
-			<item.icon size={21} strokeWidth={1.9} />
+			<span
+				class="flex h-8 w-14 items-center justify-center rounded-pill transition-all duration-300"
+				style="background:{active ? '#dceef1' : 'transparent'}"
+			>
+				<item.icon size={21} strokeWidth={active ? 2.2 : 1.9} />
+			</span>
 			{item.label}
 		</a>
 	{/each}

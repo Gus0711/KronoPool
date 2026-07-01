@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CreneauCard from '$lib/components/CreneauCard.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import { formatJour } from '$lib/format';
 	import { Phone } from 'lucide-svelte';
 	import type { PageData } from './$types';
@@ -45,11 +46,16 @@
 	{/if}
 
 	{#if liste.length === 0}
-		<p class="mt-16 text-center text-[14px] text-muted">
-			{onglet === 'avenir' ? 'Aucune réservation à venir.' : 'Aucune réservation passée.'}
-		</p>
+		<EmptyState
+			illus={onglet === 'avenir' ? 'nageur' : 'vagues'}
+			title={onglet === 'avenir' ? 'Aucune réservation à venir' : 'Aucune réservation passée'}
+		>
+			{onglet === 'avenir'
+				? 'Filez sur l’onglet Créneaux pour réserver un poste.'
+				: 'Vos créneaux passés apparaîtront ici.'}
+		</EmptyState>
 	{:else}
-		{#each liste as r (r.posteId)}
+		{#each liste as r, i (r.posteId)}
 			<div class="daylabel">{formatJour(r.date)}</div>
 			<CreneauCard
 				heureDebut={r.heureDebut}
@@ -57,6 +63,7 @@
 				niveau={r.niveauRequis}
 				commentaire={r.commentaire}
 				muted={onglet === 'passees'}
+				delay={Math.min(i * 45, 360)}
 			>
 				{#snippet action()}
 					<div class="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-teal">

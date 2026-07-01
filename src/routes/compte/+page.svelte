@@ -4,6 +4,7 @@
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import ValiditePill from '$lib/components/ValiditePill.svelte';
+	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
 	import { ArrowLeft, LogOut } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
@@ -20,7 +21,7 @@
 
 <svelte:head><title>Mon compte · KronoPool</title></svelte:head>
 
-<div class="mx-auto flex min-h-[100dvh] max-w-app flex-col bg-bg">
+<div class="app-water-bg mx-auto flex min-h-[100dvh] max-w-app flex-col">
 	<div class="flex flex-1 flex-col">
 		<AppHeader prenom={data.infos.prenom} nom={data.infos.nom} title="Mon compte" />
 
@@ -84,7 +85,7 @@
 					<input class="field" type="password" name="current" placeholder="Mot de passe actuel" autocomplete="current-password" required />
 					<input class="field" type="password" name="password" placeholder="Nouveau mot de passe" autocomplete="new-password" required minlength="8" />
 					<input class="field" type="password" name="confirm" placeholder="Confirmer" autocomplete="new-password" required minlength="8" />
-					<button class="cta-sand" type="submit" disabled={loading}>
+					<button class="cta-sand" type="submit" disabled={loading} use:ripple>
 						{loading ? 'Enregistrement…' : 'Enregistrer'}
 					</button>
 				</form>

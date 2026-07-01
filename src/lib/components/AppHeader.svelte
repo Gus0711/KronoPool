@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { initiales } from '$lib/format';
+	import WaterWaves from './WaterWaves.svelte';
 
 	let {
 		prenom,
@@ -16,9 +17,8 @@
 </script>
 
 <header class="header-lagon">
-	<svg class="wave" viewBox="0 0 366 40" preserveAspectRatio="none" aria-hidden="true">
-		<path d="M0 20 Q60 4 120 20 T240 20 T366 20 V40 H0 Z" fill="#eaf3f5" />
-	</svg>
+	<div class="caustics"></div>
+	<WaterWaves />
 
 	<div class="relative flex items-center justify-between">
 		<div>

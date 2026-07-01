@@ -20,17 +20,63 @@
 }
 
 @layer components {
-	/* En-tête dégradé lagon avec vague décorative (cf. design system). */
+	/* ------------------------------------------------------------------ *
+	 * Fond « eau » — halo doux + lignes de nage très pâles sur le fond app.
+	 * Mobile-first : léger, lisible, ne gêne pas le texte.
+	 * ------------------------------------------------------------------ */
+	.app-water-bg {
+		background-color: theme('colors.bg');
+		background-image:
+			radial-gradient(120% 60% at 50% -10%, rgba(21, 94, 117, 0.08), transparent 60%),
+			radial-gradient(90% 40% at 100% 100%, rgba(224, 182, 118, 0.06), transparent 70%),
+			repeating-linear-gradient(
+				0deg,
+				transparent 0,
+				transparent 46px,
+				rgba(21, 94, 117, 0.025) 46px,
+				rgba(21, 94, 117, 0.025) 47px
+			);
+		background-attachment: fixed;
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * En-tête dégradé lagon avec « ligne d'eau » (cf. design system).
+	 * ------------------------------------------------------------------ */
 	.header-lagon {
 		@apply relative overflow-hidden bg-lagon text-white;
 		padding: 6px 20px 30px;
 	}
 
-	/* Vague décorative « ligne d'eau » en bas de l'en-tête. */
+	/* Caustiques : reflets de lumière animés au fond du bassin. */
+	.caustics {
+		@apply pointer-events-none absolute inset-0;
+		background-image:
+			radial-gradient(38% 28% at 22% 18%, rgba(255, 255, 255, 0.16), transparent 70%),
+			radial-gradient(30% 22% at 78% 30%, rgba(224, 182, 118, 0.14), transparent 70%),
+			radial-gradient(34% 24% at 55% 72%, rgba(255, 255, 255, 0.1), transparent 70%);
+		background-size: 160% 160%;
+		animation: caustics-float 18s ease-in-out infinite alternate;
+	}
+
+	/* Vague décorative « ligne d'eau » en bas de l'en-tête (fallback statique). */
 	.wave {
 		@apply absolute left-0 right-0 w-full;
 		bottom: -1px;
 		height: 34px;
+	}
+
+	/* Couches de vagues animées (composant WaterWaves). */
+	.wave-layer {
+		@apply absolute left-0 w-[200%];
+		bottom: -1px;
+		height: 40px;
+	}
+	.wave-back {
+		animation: wave-drift 14s linear infinite;
+		opacity: 0.55;
+	}
+	.wave-front {
+		animation: wave-drift 9s linear infinite reverse;
 	}
 
 	/* Carte de créneau blanche. */
@@ -40,10 +86,13 @@
 
 	/* Bouton d'action principal (sable). */
 	.cta-sand {
-		@apply w-full rounded-cta bg-sand px-4 py-[13px] text-center text-[14.5px] font-bold text-sand-ink shadow-cta transition;
+		@apply relative w-full overflow-hidden rounded-cta bg-sand px-4 py-[13px] text-center text-[14.5px] font-bold text-sand-ink shadow-cta transition;
 	}
 	.cta-sand:hover {
 		filter: brightness(0.96);
+	}
+	.cta-sand:active {
+		transform: translateY(1px);
 	}
 	.cta-sand:disabled {
 		@apply cursor-not-allowed opacity-60;
@@ -52,7 +101,7 @@
 
 	/* Champ de formulaire arrondi. */
 	.field {
-		@apply w-full rounded-cta border border-card-border bg-white px-4 py-3 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal;
+		@apply w-full rounded-cta border border-card-border bg-white px-4 py-3 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal focus:shadow-[0_0_0_3px_rgba(21,94,117,0.12)];
 	}
 
 	/* Chips filtre (sur en-tête lagon). */
@@ -60,23 +109,149 @@
 		@apply rounded-pill px-[15px] py-2 text-[12.5px] font-semibold transition;
 	}
 	.chip-on {
-		@apply bg-sand font-bold text-sand-ink;
+		@apply bg-sand font-bold text-sand-ink shadow-cta;
 	}
 	.chip-off {
 		@apply text-white;
 		background: rgba(255, 255, 255, 0.14);
 	}
+	.chip-off:hover {
+		background: rgba(255, 255, 255, 0.22);
+	}
 
 	/* Titre de jour (liste créneaux). */
 	.daylabel {
-		@apply mx-1 mb-[10px] mt-[14px] font-display text-[14px] font-semibold text-teal;
+		@apply mx-1 mb-[10px] mt-[14px] flex items-center gap-2 font-display text-[14px] font-semibold text-teal;
+	}
+	.daylabel::after {
+		content: '';
+		@apply h-px flex-1;
+		background: linear-gradient(90deg, rgba(21, 94, 117, 0.25), transparent);
 	}
 
 	/* Badges niveau. */
 	.badge-bnssa {
-		@apply rounded-pill bg-bnssa-bg px-2.5 py-[5px] text-[11px] font-bold text-bnssa-text;
+		@apply inline-flex items-center gap-1 rounded-pill bg-bnssa-bg px-2.5 py-[5px] text-[11px] font-bold text-bnssa-text;
 	}
 	.badge-mns {
-		@apply rounded-pill bg-mns-bg px-2.5 py-[5px] text-[11px] font-bold text-mns-text;
+		@apply inline-flex items-center gap-1 rounded-pill bg-mns-bg px-2.5 py-[5px] text-[11px] font-bold text-mns-text;
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * Ripple (ondulation « eau ») injecté par l'action use:ripple.
+	 * ------------------------------------------------------------------ */
+	.ripple-ink {
+		@apply pointer-events-none absolute rounded-full;
+		background: currentColor;
+		opacity: 0.18;
+		transform: scale(0);
+		animation: ripple-out 0.55s ease-out forwards;
+	}
+
+	/* Squelette de chargement — reflet d'eau qui balaie. */
+	.skeleton {
+		@apply relative overflow-hidden rounded-cta bg-card-border/60;
+	}
+	.skeleton::after {
+		content: '';
+		@apply absolute inset-0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.65),
+			transparent
+		);
+		transform: translateX(-100%);
+		animation: shimmer 1.4s infinite;
+	}
+}
+
+@layer utilities {
+	/* Entrée douce des cartes (fade + montée). Décalage via style inline. */
+	.enter-rise {
+		animation: fade-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+	/* Pop de confirmation (coche de réservation). */
+	.pop-in {
+		animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+	}
+}
+
+/* ---------------------------------------------------------------------- *
+ * Keyframes
+ * ---------------------------------------------------------------------- */
+@keyframes wave-drift {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+@keyframes caustics-float {
+	0% {
+		background-position: 0% 0%, 100% 0%, 50% 100%;
+	}
+	100% {
+		background-position: 30% 20%, 60% 40%, 40% 60%;
+	}
+}
+@keyframes ripple-out {
+	to {
+		transform: scale(2.4);
+		opacity: 0;
+	}
+}
+@keyframes shimmer {
+	100% {
+		transform: translateX(100%);
+	}
+}
+@keyframes fade-rise {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes pop-in {
+	from {
+		opacity: 0;
+		transform: scale(0.6);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+@keyframes gauge-fill {
+	from {
+		height: 0%;
+	}
+}
+
+/* ---------------------------------------------------------------------- *
+ * Accessibilité : coupe toute animation si l'utilisateur le demande.
+ * ---------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+	.caustics,
+	.wave-back,
+	.wave-front,
+	.ripple-ink,
+	.skeleton::after,
+	.enter-rise,
+	.pop-in {
+		animation: none !important;
+	}
+	.enter-rise,
+	.pop-in {
+		opacity: 1;
+		transform: none;
+	}
+	.wave-back {
+		opacity: 0.55;
 	}
 }

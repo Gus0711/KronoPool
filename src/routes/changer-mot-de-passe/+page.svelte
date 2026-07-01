@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import WaterWaves from '$lib/components/WaterWaves.svelte';
+	import { ripple } from '$lib/actions/ripple';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -8,11 +10,10 @@
 
 <svelte:head><title>Nouveau mot de passe · KronoPool</title></svelte:head>
 
-<div class="min-h-[100dvh] bg-bg">
+<div class="app-water-bg min-h-[100dvh]">
 	<header class="header-lagon">
-		<svg class="wave" viewBox="0 0 366 40" preserveAspectRatio="none" aria-hidden="true">
-			<path d="M0 20 Q60 4 120 20 T240 20 T366 20 V40 H0 Z" fill="#eaf3f5" />
-		</svg>
+		<div class="caustics"></div>
+		<WaterWaves />
 		<div class="relative py-4">
 			<div class="font-display text-[13px] font-bold tracking-[.02em]">KronoPool</div>
 			<h1 class="mt-2 font-display text-[24px] font-bold tracking-[-.02em]">
@@ -53,7 +54,7 @@
 					<span class="text-[13px] font-semibold text-ink">Confirmation</span>
 					<input class="field" type="password" name="confirm" autocomplete="new-password" required minlength="8" />
 				</label>
-				<button class="cta-sand mt-2" type="submit" disabled={loading}>
+				<button class="cta-sand mt-2" type="submit" disabled={loading} use:ripple>
 					{loading ? 'Validation…' : 'Valider'}
 				</button>
 			</form>

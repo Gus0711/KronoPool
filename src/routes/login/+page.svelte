@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import WaterWaves from '$lib/components/WaterWaves.svelte';
+	import { ripple } from '$lib/actions/ripple';
+	import { LifeBuoy } from 'lucide-svelte';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -8,12 +11,12 @@
 
 <svelte:head><title>Connexion · KronoPool</title></svelte:head>
 
-<div class="min-h-[100dvh] bg-bg">
-	<div class="header-lagon">
-		<svg class="wave" viewBox="0 0 366 40" preserveAspectRatio="none" aria-hidden="true">
-			<path d="M0 20 Q60 4 120 20 T240 20 T366 20 V40 H0 Z" fill="#eaf3f5" />
-		</svg>
-		<div class="relative py-8 text-center">
+<div class="app-water-bg min-h-[100dvh]">
+	<div class="header-lagon" style="padding-bottom:44px">
+		<div class="caustics"></div>
+		<WaterWaves />
+		<div class="relative py-9 text-center">
+			<LifeBuoy size={40} strokeWidth={1.8} class="mx-auto mb-3 text-sand" />
 			<div class="font-display text-[24px] font-bold tracking-[.02em]">KronoPool</div>
 			<div class="mt-1 text-[13px] opacity-80">Gestion des plannings de piscine</div>
 		</div>
@@ -67,7 +70,7 @@
 						placeholder="••••••••"
 					/>
 				</label>
-				<button class="cta-sand mt-2" type="submit" disabled={loading}>
+				<button class="cta-sand mt-2" type="submit" disabled={loading} use:ripple>
 					{loading ? 'Connexion…' : 'Se connecter'}
 				</button>
 			</form>

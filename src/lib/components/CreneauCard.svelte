@@ -10,6 +10,7 @@
 		niveau,
 		commentaire = null,
 		muted = false,
+		delay = 0,
 		action
 	}: {
 		heureDebut: string;
@@ -17,18 +18,25 @@
 		niveau: Niveau;
 		commentaire?: string | null;
 		muted?: boolean;
+		delay?: number;
 		action?: Snippet;
 	} = $props();
 </script>
 
-<div class="card-lagon {muted ? 'opacity-70' : ''}">
+<div
+	class="card-lagon enter-rise mb-3 transition-shadow duration-200 hover:shadow-lg {muted
+		? 'opacity-70'
+		: ''}"
+	style="animation-delay:{delay}ms"
+>
 	<div class="flex items-start justify-between gap-3">
 		<div>
-			<div class="font-display text-[19px] font-bold text-ink">
+			<div class="flex items-center gap-1.5 font-display text-[19px] font-bold text-ink">
+				<span class="h-2 w-2 shrink-0 rounded-full bg-teal/70"></span>
 				{formatPlage(heureDebut, heureFin)}
 			</div>
 			{#if commentaire}
-				<div class="mt-[3px] text-[13px] text-muted">{commentaire}</div>
+				<div class="mt-[3px] pl-[14px] text-[13px] text-muted">{commentaire}</div>
 			{/if}
 		</div>
 		<NiveauBadge {niveau} />
