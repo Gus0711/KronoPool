@@ -100,8 +100,8 @@ docker compose up -d --build
 docker compose logs -f
 ```
 
-L'app écoute sur `127.0.0.1:3000`. Pour tester en direct sur le LAN, mettre
-`"3000:3000"` dans `docker-compose.yml`.
+L'app écoute sur `127.0.0.1:<APP_PORT>` (défaut 3000) — c'est ce port que le
+Cloudflare Tunnel doit cibler. Changer `APP_PORT` dans `.env` si besoin.
 
 ### Option B — docker run
 

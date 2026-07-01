@@ -4,11 +4,11 @@ services:
     image: kronopool
     container_name: kronopool
     restart: unless-stopped
-    # Le port 3000 n'est publié que sur la machine hôte (127.0.0.1) : on expose
-    # ensuite via un reverse-proxy / Cloudflare Tunnel avec HTTPS. Pour un accès
-    # direct sur le LAN, remplacer par "3000:3000".
+    # Publié uniquement sur l'hôte (127.0.0.1) : le Cloudflare Tunnel qui tourne
+    # sur le Proxmox pointera vers ce port. Choisir le port hôte via APP_PORT
+    # dans .env (défaut 3000). Le port interne du conteneur reste 3000.
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
     environment:
       DATABASE_URL: file:/data/app.db
       # Les valeurs sensibles proviennent du fichier .env (voir .env.example).
