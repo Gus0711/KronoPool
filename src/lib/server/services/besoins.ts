@@ -1,7 +1,8 @@
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { auditLog, besoin, poste, user, type Niveau } from '../db/schema';
 import { parisNowKey, posteKey } from '../time';
+import { estEligible } from './eligibilite';
 
 export type StatutBesoin = 'avenir' | 'complet' | 'passe';
 
@@ -241,6 +242,55 @@ export async function supprimerPoste(posteId: string): Promise<boolean> {
 		if (!p || p.reservedBy) return false;
 		await tx.delete(poste).where(eq(poste.id, posteId));
 		return true;
+	});
+}
+
+export type AssignationResult =
+	| { ok: true }
+	| { ok: false; reason: 'introuvable' | 'intervenant_invalide' | 'ineligible' | 'deja_pris' };
+
+/**
+ * **Assigne** manuellement un intervenant à un poste libre (admin, CDC §6.2).
+ *
+ * Contrôles **avant** l'UPDATE : intervenant existant, actif, de rôle `intervenant`,
+ * et **éligible** au niveau du poste (poste MNS → MNS uniquement ; poste BNSSA →
+ * MNS ou BNSSA). L'écriture garde le verrou de concurrence `WHERE reserved_by IS
+ * NULL` : `rowsAffected = 0` ⇒ le poste vient d'être pris. Tracé dans `audit_log`.
+ *
+ * Contrairement à la réservation intervenant, l'admin peut assigner un poste
+ * **passé** (saisie a posteriori de qui a couvert le créneau).
+ */
+export async function assignerPoste(
+	adminId: string,
+	posteId: string,
+	intervenantId: string
+): Promise<AssignationResult> {
+	return db.transaction(async (tx) => {
+		const p = await tx.select().from(poste).where(eq(poste.id, posteId)).get();
+		if (!p) return { ok: false, reason: 'introuvable' as const };
+		if (p.reservedBy) return { ok: false, reason: 'deja_pris' as const };
+
+		const u = await tx.select().from(user).where(eq(user.id, intervenantId)).get();
+		if (!u || u.role !== 'intervenant' || !u.actif) {
+			return { ok: false, reason: 'intervenant_invalide' as const };
+		}
+		if (!estEligible(u.niveau, p.niveauRequis)) {
+			return { ok: false, reason: 'ineligible' as const };
+		}
+
+		const res = await tx
+			.update(poste)
+			.set({ reservedBy: intervenantId, reservedAt: new Date() })
+			.where(and(eq(poste.id, posteId), isNull(poste.reservedBy)));
+		if (res.rowsAffected !== 1) return { ok: false, reason: 'deja_pris' as const };
+
+		await tx.insert(auditLog).values({
+			posteId,
+			action: 'assignation',
+			ancienIntervenant: intervenantId,
+			adminId
+		});
+		return { ok: true as const };
 	});
 }
 

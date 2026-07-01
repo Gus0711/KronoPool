@@ -3,7 +3,7 @@
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import { toasts } from '$lib/toast';
 	import { formatJour, formatPlage } from '$lib/format';
-	import { ArrowLeft, Pencil, Trash2, Unlock, Phone } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Unlock, Phone, UserPlus } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -25,6 +25,10 @@
 		if (form?.action === 'supprimerPoste') {
 			if (form.ok) toasts.success('Poste supprimé ✓');
 			else toasts.error('Ce poste est réservé : libérez-le avant de le supprimer.');
+		}
+		if (form?.action === 'assigner') {
+			if (form.ok) toasts.success('Intervenant assigné ✓');
+			else toasts.error(form.error ?? "Impossible d'assigner cet intervenant.");
 		}
 	});
 
@@ -141,12 +145,30 @@
 					</button>
 				</form>
 			{:else}
-				<form method="POST" action="?/supprimerPoste" use:enhance>
-					<input type="hidden" name="posteId" value={p.id} />
-					<button class="inline-flex items-center gap-1.5 rounded-cta border border-danger/30 bg-danger-bg px-3 py-2 text-[13px] font-semibold text-danger" type="submit">
-						<Trash2 size={15} /> Supprimer
-					</button>
-				</form>
+				<div class="flex flex-wrap items-center justify-end gap-2">
+					{#if data.eligibles[p.niveauRequis].length > 0}
+						<form method="POST" action="?/assigner" use:enhance class="flex items-center gap-2">
+							<input type="hidden" name="posteId" value={p.id} />
+							<select name="intervenantId" required class="field max-w-[200px] py-2 text-[13px]">
+								<option value="" disabled selected>Assigner à…</option>
+								{#each data.eligibles[p.niveauRequis] as i (i.id)}
+									<option value={i.id}>{i.prenom} {i.nom} ({i.niveau})</option>
+								{/each}
+							</select>
+							<button class="inline-flex items-center gap-1.5 rounded-cta border border-card-border bg-white px-3 py-2 text-[13px] font-semibold text-teal" type="submit">
+								<UserPlus size={15} /> Assigner
+							</button>
+						</form>
+					{:else}
+						<span class="text-[12px] text-muted">Aucun intervenant éligible</span>
+					{/if}
+					<form method="POST" action="?/supprimerPoste" use:enhance>
+						<input type="hidden" name="posteId" value={p.id} />
+						<button class="inline-flex items-center gap-1.5 rounded-cta border border-danger/30 bg-danger-bg px-3 py-2 text-[13px] font-semibold text-danger" type="submit">
+							<Trash2 size={15} /> Supprimer
+						</button>
+					</form>
+				</div>
 			{/if}
 		</div>
 	{/each}
