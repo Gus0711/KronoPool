@@ -1,0 +1,27 @@
+services:
+  kronopool:
+    build: .
+    image: kronopool
+    container_name: kronopool
+    restart: unless-stopped
+    # Le port 3000 n'est publié que sur la machine hôte (127.0.0.1) : on expose
+    # ensuite via un reverse-proxy / Cloudflare Tunnel avec HTTPS. Pour un accès
+    # direct sur le LAN, remplacer par "3000:3000".
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: file:/data/app.db
+      # Les valeurs sensibles proviennent du fichier .env (voir .env.example).
+      SESSION_SECRET: ${SESSION_SECRET}
+      ADMIN1_EMAIL: ${ADMIN1_EMAIL}
+      ADMIN1_PASSWORD: ${ADMIN1_PASSWORD}
+      ADMIN1_NOM: ${ADMIN1_NOM}
+      ADMIN1_PRENOM: ${ADMIN1_PRENOM}
+      ADMIN2_EMAIL: ${ADMIN2_EMAIL}
+      ADMIN2_PASSWORD: ${ADMIN2_PASSWORD}
+      ADMIN2_NOM: ${ADMIN2_NOM}
+      ADMIN2_PRENOM: ${ADMIN2_PRENOM}
+      PUBLIC_DIRECTEUR_TEL: ${PUBLIC_DIRECTEUR_TEL}
+    volumes:
+      # Base SQLite persistante (à sauvegarder). Bind mount sur l'hôte Proxmox.
+      - /srv/kronopool/data:/data

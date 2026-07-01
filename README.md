@@ -77,24 +77,55 @@ src/
 
 ## Déploiement (Proxmox / Docker)
 
+Au démarrage, le conteneur **applique les migrations** puis **crée les comptes admin**
+(idempotent : un admin déjà présent est ignoré). Aucune étape manuelle de seed.
+
+### Option A — docker compose (recommandé)
+
+Sur l'hôte Proxmox (VM ou LXC avec Docker installé) :
+
+```bash
+# 1. Récupérer le projet
+git clone <votre-repo> kronopool && cd kronopool
+
+# 2. Créer le fichier d'environnement à partir de l'exemple, puis l'éditer
+cp .env.example .env
+nano .env          # SESSION_SECRET + identifiants ADMIN1/ADMIN2 + PUBLIC_DIRECTEUR_TEL
+
+# 3. Préparer le volume de données et lancer
+sudo mkdir -p /srv/kronopool/data
+docker compose up -d --build
+
+# 4. Suivre le démarrage (migrations + seed admin)
+docker compose logs -f
+```
+
+L'app écoute sur `127.0.0.1:3000`. Pour tester en direct sur le LAN, mettre
+`"3000:3000"` dans `docker-compose.yml`.
+
+### Option B — docker run
+
 ```bash
 docker build -t kronopool .
-docker run -d --name kronopool \
-  -p 3000:3000 \
+docker run -d --name kronopool --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
   -v /srv/kronopool/data:/data \
   -e DATABASE_URL=file:/data/app.db \
   -e SESSION_SECRET=... \
-  -e ADMIN1_EMAIL=... -e ADMIN1_PASSWORD=... \
-  -e ADMIN2_EMAIL=... -e ADMIN2_PASSWORD=... \
+  -e ADMIN1_EMAIL=... -e ADMIN1_PASSWORD=... -e ADMIN1_NOM=... -e ADMIN1_PRENOM=... \
+  -e ADMIN2_EMAIL=... -e ADMIN2_PASSWORD=... -e ADMIN2_NOM=... -e ADMIN2_PRENOM=... \
   -e PUBLIC_DIRECTEUR_TEL="06 XX XX XX XX" \
   kronopool
 ```
 
-Le conteneur applique les migrations au démarrage. Créer les admins la première fois :
-`docker exec kronopool node --env-file=/dev/null --experimental-strip-types src/lib/server/db/seed.ts`
-n'est pas disponible dans l'image runtime ; utilisez plutôt un job ponctuel via `npm run db:seed`
-en montant le même volume, ou insérez les admins avec vos identifiants. Exposition recommandée :
-**Cloudflare Tunnel** sur un sous-domaine. Sauvegarde : copie régulière de `/data/app.db`.
+### Exposition & sauvegarde
+
+- **HTTPS** : exposer via **Cloudflare Tunnel** (`cloudflared`) ou un reverse-proxy
+  (Nginx Proxy Manager, Caddy, Traefik) sur un sous-domaine. Ne pas exposer le port 3000
+  brut sur Internet.
+- **Sauvegarde** : copie régulière de `/srv/kronopool/data/app.db` (+ `-wal`/`-shm` si présents).
+- **Mise à jour** : `git pull && docker compose up -d --build` (les migrations éventuelles
+  s'appliquent automatiquement au redémarrage).
 
 Cible future **Vercel + Turso** : basculer `adapter-vercel` et pointer `DATABASE_URL` +
 `DATABASE_AUTH_TOKEN` vers Turso — aucune modification de la logique applicative.
