@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { env } from '$env/dynamic/public';
 import { requireIntervenant } from '$lib/server/auth/guards';
 import { listerCreneaux, reserverPoste } from '$lib/server/services/creneaux';
 import type { Actions, PageServerLoad } from './$types';
@@ -6,7 +7,7 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = requireIntervenant(locals.user);
 	const creneaux = await listerCreneaux(user.niveau);
-	return { creneaux, niveau: user.niveau };
+	return { creneaux, niveau: user.niveau, directeurTel: env.PUBLIC_DIRECTEUR_TEL ?? '' };
 };
 
 const messages: Record<string, string> = {
