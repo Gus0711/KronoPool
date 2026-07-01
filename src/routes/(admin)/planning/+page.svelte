@@ -2,7 +2,7 @@
 	import BesoinRow from '$lib/components/BesoinRow.svelte';
 	import WeekCalendar from '$lib/components/WeekCalendar.svelte';
 	import { formatJour } from '$lib/format';
-	import { CalendarRange, List } from 'lucide-svelte';
+	import { CalendarRange, List, PlusCircle } from 'lucide-svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -24,6 +24,10 @@
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
 	<h1 class="font-display text-[24px] font-bold text-ink">Planning global</h1>
+	<div class="flex flex-wrap items-center gap-3">
+	<a href="/besoins/nouveau" class="cta-sand inline-flex w-auto items-center gap-2 px-4">
+		<PlusCircle size={18} /> Nouveau besoin
+	</a>
 	<div class="inline-flex overflow-hidden rounded-cta border border-card-border bg-white">
 		<button
 			class="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold transition {vue === 'semaine' ? 'bg-teal text-white' : 'text-muted hover:bg-bg'}"
@@ -37,6 +41,7 @@
 		>
 			<List size={16} /> Liste
 		</button>
+	</div>
 	</div>
 </div>
 

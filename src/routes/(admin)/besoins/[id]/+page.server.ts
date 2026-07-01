@@ -7,7 +7,7 @@ import {
 	modifierBesoin,
 	supprimerBesoin
 } from '$lib/server/services/besoins';
-import { besoinBase } from '$lib/server/validation';
+import { besoinCreate } from '$lib/server/validation';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -32,11 +32,13 @@ export const actions: Actions = {
 	modifier: async ({ request, locals, params }) => {
 		requireAdmin(locals.user);
 		const form = await request.formData();
-		const parsed = besoinBase.safeParse({
+		const parsed = besoinCreate.safeParse({
 			date: form.get('date'),
 			heureDebut: form.get('heureDebut'),
 			heureFin: form.get('heureFin'),
-			commentaire: form.get('commentaire')
+			commentaire: form.get('commentaire'),
+			nbMns: form.get('nbMns'),
+			nbBnssa: form.get('nbBnssa')
 		});
 		if (!parsed.success) {
 			return fail(400, {
@@ -44,7 +46,8 @@ export const actions: Actions = {
 				error: parsed.error.issues[0]?.message ?? 'Champs invalides'
 			});
 		}
-		await modifierBesoin(params.id, parsed.data);
+		const res = await modifierBesoin(params.id, parsed.data);
+		if (!res.ok) return fail(400, { action: 'modifier', error: res.error });
 		return { action: 'modifier', ok: true };
 	},
 

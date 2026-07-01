@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { auditLog, besoin, poste, user, type Niveau } from '../db/schema';
 import { parisNowKey, posteKey } from '../time';
@@ -157,15 +157,71 @@ export async function compterReservations(besoinId: string): Promise<number> {
 	return r?.n ?? 0;
 }
 
-/** Modifie l'entête d'un besoin (date/heures/commentaire). */
+const NIVEAU_LABEL: Record<Niveau, string> = { MNS: 'MNS', BNSSA: 'BNSSA' };
+
+/**
+ * Modifie un besoin : entête (date/heures/commentaire) **et** ajuste le nombre de
+ * postes par niveau. Augmenter le nombre ajoute des postes libres ; le réduire
+ * supprime des postes **libres** uniquement. On ne peut jamais descendre sous le
+ * nombre de postes déjà réservés (il faut d'abord les libérer). Tout se fait dans
+ * une transaction : en cas de refus, aucune modification n'est appliquée.
+ */
 export async function modifierBesoin(
 	id: string,
-	data: { date: string; heureDebut: string; heureFin: string; commentaire: string | null }
-): Promise<void> {
-	await db
-		.update(besoin)
-		.set({ ...data, updatedAt: new Date() })
-		.where(eq(besoin.id, id));
+	data: {
+		date: string;
+		heureDebut: string;
+		heureFin: string;
+		commentaire: string | null;
+		nbMns: number;
+		nbBnssa: number;
+	}
+): Promise<{ ok: true } | { ok: false; error: string }> {
+	return db.transaction(async (tx) => {
+		const rows = await tx.select().from(poste).where(eq(poste.besoinId, id));
+
+		const cibles: Record<Niveau, number> = { MNS: data.nbMns, BNSSA: data.nbBnssa };
+		const aAjouter: { besoinId: string; niveauRequis: Niveau }[] = [];
+		const aSupprimer: string[] = [];
+
+		for (const niveau of ['MNS', 'BNSSA'] as const) {
+			const cible = cibles[niveau];
+			const groupe = rows.filter((r) => r.niveauRequis === niveau);
+			const reserves = groupe.filter((r) => r.reservedBy).length;
+
+			// Refus si on tente de descendre sous les postes déjà réservés.
+			if (cible < reserves) {
+				return {
+					ok: false as const,
+					error: `Impossible de réduire à ${cible} poste(s) ${NIVEAU_LABEL[niveau]} : ${reserves} déjà réservé(s). Libérez d'abord les postes concernés.`
+				};
+			}
+
+			if (cible > groupe.length) {
+				for (let i = 0; i < cible - groupe.length; i++)
+					aAjouter.push({ besoinId: id, niveauRequis: niveau });
+			} else if (cible < groupe.length) {
+				const libres = groupe.filter((r) => !r.reservedBy).map((r) => r.id);
+				aSupprimer.push(...libres.slice(0, groupe.length - cible));
+			}
+		}
+
+		if (aAjouter.length > 0) await tx.insert(poste).values(aAjouter);
+		if (aSupprimer.length > 0) await tx.delete(poste).where(inArray(poste.id, aSupprimer));
+
+		await tx
+			.update(besoin)
+			.set({
+				date: data.date,
+				heureDebut: data.heureDebut,
+				heureFin: data.heureFin,
+				commentaire: data.commentaire,
+				updatedAt: new Date()
+			})
+			.where(eq(besoin.id, id));
+
+		return { ok: true as const };
+	});
 }
 
 /** Supprime un besoin (CASCADE sur les postes). */

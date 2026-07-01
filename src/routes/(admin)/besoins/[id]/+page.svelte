@@ -10,6 +10,8 @@
 	let showEdit = $state(false);
 
 	const d = $derived(data.detail);
+	const nbMnsActuel = $derived(d.postes.filter((p) => p.niveauRequis === 'MNS').length);
+	const nbBnssaActuel = $derived(d.postes.filter((p) => p.niveauRequis === 'BNSSA').length);
 
 	$effect(() => {
 		if (form?.action === 'liberer') {
@@ -85,6 +87,19 @@
 				<span class="text-[13px] font-semibold text-ink">Commentaire</span>
 				<input class="field" type="text" name="commentaire" value={d.commentaire ?? ''} />
 			</label>
+			<div class="flex gap-3">
+				<label class="flex flex-1 flex-col gap-1">
+					<span class="text-[13px] font-semibold text-ink">Postes MNS</span>
+					<input class="field" type="number" name="nbMns" min="0" max="50" value={nbMnsActuel} required />
+				</label>
+				<label class="flex flex-1 flex-col gap-1">
+					<span class="text-[13px] font-semibold text-ink">Postes BNSSA</span>
+					<input class="field" type="number" name="nbBnssa" min="0" max="50" value={nbBnssaActuel} required />
+				</label>
+			</div>
+			<p class="text-[12px] text-muted">
+				Augmenter le nombre ajoute des postes libres. Le réduire supprime des postes libres uniquement — pour retirer un poste réservé, libérez-le d'abord ci-dessous.
+			</p>
 			<div class="flex gap-2">
 				<button class="cta-sand" type="submit">Enregistrer</button>
 				<button class="rounded-cta border border-card-border bg-white px-4 py-2 text-[14px] font-semibold text-muted" type="button" onclick={() => (showEdit = false)}>Annuler</button>
