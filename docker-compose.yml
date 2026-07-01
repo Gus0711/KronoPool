@@ -11,6 +11,8 @@ services:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
     environment:
       DATABASE_URL: file:/data/app.db
+      # URL publique exacte (CSRF des form actions derrière le tunnel).
+      ORIGIN: ${ORIGIN}
       # Les valeurs sensibles proviennent du fichier .env (voir .env.example).
       SESSION_SECRET: ${SESSION_SECRET}
       ADMIN1_EMAIL: ${ADMIN1_EMAIL}

@@ -123,6 +123,11 @@ docker run -d --name kronopool --restart unless-stopped \
 - **HTTPS** : exposer via **Cloudflare Tunnel** (`cloudflared`) ou un reverse-proxy
   (Nginx Proxy Manager, Caddy, Traefik) sur un sous-domaine. Ne pas exposer le port 3000
   brut sur Internet.
+- **`ORIGIN` (obligatoire derrière un proxy)** : régler `ORIGIN` dans `.env` sur l'URL
+  publique exacte (ex. `https://piscine-suippes.datagtb.com`). Sans quoi les soumissions
+  de formulaire (connexion, réservations, actions admin) échouent en **403** (protection
+  CSRF de SvelteKit). Changer de domaine = mettre à jour cette seule variable, puis
+  `docker compose up -d` (recrée le conteneur avec le nouvel env).
 - **Sauvegarde** : copie régulière de `/srv/kronopool/data/app.db` (+ `-wal`/`-shm` si présents).
 - **Mise à jour** : `git pull && docker compose up -d --build` (les migrations éventuelles
   s'appliquent automatiquement au redémarrage).
