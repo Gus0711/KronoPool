@@ -6,6 +6,8 @@ export default defineConfig({
 	plugins: [
 		sveltekit(),
 		SvelteKitPWA({
+			// SW écrit à la main (src/service-worker.ts) : nécessaire pour gérer le push.
+			strategies: 'injectManifest',
 			// Mise à jour transparente du SW (le shell se rafraîchit au prochain chargement).
 			registerType: 'autoUpdate',
 			// On enregistre le SW manuellement dans le layout racine (onMount).
@@ -33,12 +35,10 @@ export default defineConfig({
 					}
 				]
 			},
-			workbox: {
+			injectManifest: {
 				// Précache minimal de l'app shell (assets client build). Pas de mise en cache
 				// des navigations/pages (SSR + auth) → pas de fallback offline pour l'instant.
-				globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
-				navigateFallback: null,
-				cleanupOutdatedCaches: true
+				globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
 			},
 			// Le SW de dev peut gêner le HMR : on teste l'installabilité via `build` + `preview`.
 			devOptions: {

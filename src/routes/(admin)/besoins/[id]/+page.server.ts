@@ -12,6 +12,7 @@ import {
 } from '$lib/server/services/besoins';
 import { listerIntervenants } from '$lib/server/services/intervenants';
 import { estEligible } from '$lib/server/services/eligibilite';
+import { notifierPosteLibere } from '$lib/server/push/notifications';
 import { besoinCreate } from '$lib/server/validation';
 import type { Niveau } from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
@@ -54,6 +55,8 @@ export const actions: Actions = {
 		if (!parsed.success) return fail(400, { action: 'liberer', error: 'Requête invalide.' });
 
 		const ok = await libererPoste(admin.id, parsed.data.posteId);
+		// Le créneau se rouvre → notifie les intervenants éligibles.
+		if (ok) void notifierPosteLibere(parsed.data.posteId);
 		return { action: 'liberer', ok };
 	},
 

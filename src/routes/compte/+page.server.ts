@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
+import { env as pubEnv } from '$env/dynamic/public';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema';
 import { hashPassword, verifyPassword, PASSWORD_MIN_LENGTH } from '$lib/server/auth/password';
@@ -40,7 +41,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		typesDocuments: estIntervenant ? await listerTypesActifs() : [],
 		conformite: estIntervenant
 			? await etatConformite({ id: full.id, niveau: full.niveau })
-			: { lignes: [], manquants: 0, enAlerte: false }
+			: { lignes: [], manquants: 0, enAlerte: false },
+		// Clé publique VAPID pour l'abonnement push côté client (null si push désactivé).
+		pushPublicKey: pubEnv.PUBLIC_VAPID_KEY || null
 	};
 };
 

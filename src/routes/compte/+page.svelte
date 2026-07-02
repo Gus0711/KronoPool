@@ -6,6 +6,7 @@
 	import ValiditePill from '$lib/components/ValiditePill.svelte';
 	import DocumentsSection from '$lib/components/DocumentsSection.svelte';
 	import InstallButton from '$lib/components/InstallButton.svelte';
+	import NotificationsToggle from '$lib/components/NotificationsToggle.svelte';
 	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
 	import { ArrowLeft, LogOut } from 'lucide-svelte';
@@ -106,6 +107,9 @@
 					</button>
 				</form>
 			</div>
+
+			<!-- Notifications push (masqué si non supporté) -->
+			<div class="mb-4"><NotificationsToggle publicKey={data.pushPublicKey} /></div>
 
 			<!-- Installer la PWA (masqué si déjà installée ou non disponible) -->
 			<div class="mb-4"><InstallButton /></div>

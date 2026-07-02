@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { env } from '$env/dynamic/public';
 import { requireIntervenant } from '$lib/server/auth/guards';
 import { listerCreneaux, reserverPoste } from '$lib/server/services/creneaux';
+import { notifierReservationAuxAdmins } from '$lib/server/push/notifications';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -32,6 +33,8 @@ export const actions: Actions = {
 		const posteId = parsed.data.posteId;
 		const result = await reserverPoste(user.id, user.niveau, posteId);
 		if (result.ok) {
+			// Informe les administrateurs du remplissage (fire-and-forget).
+			void notifierReservationAuxAdmins(posteId, user.id);
 			return { ok: true as const, message: 'Créneau réservé ✓', posteId };
 		}
 		return { ok: false as const, message: messages[result.reason], posteId };

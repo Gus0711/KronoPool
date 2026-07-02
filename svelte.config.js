@@ -5,7 +5,12 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
 	preprocess: vitePreprocess(),
 	kit: {
-		adapter: adapter()
+		adapter: adapter(),
+		// Le service worker est géré par @vite-pwa (injectManifest + enregistrement
+		// via virtual:pwa-register) ; on désactive l'auto-enregistrement de SvelteKit.
+		serviceWorker: {
+			register: false
+		}
 	}
 };
 

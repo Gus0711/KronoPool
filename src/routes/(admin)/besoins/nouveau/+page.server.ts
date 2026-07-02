@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { requireAdmin } from '$lib/server/auth/guards';
 import { creerBesoin } from '$lib/server/services/besoins';
+import { notifierNouveauBesoin } from '$lib/server/push/notifications';
 import { besoinCreate } from '$lib/server/validation';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -39,6 +40,8 @@ export const actions: Actions = {
 		}
 
 		const id = await creerBesoin(admin.id, parsed.data);
+		// Notifie les intervenants éligibles (fire-and-forget, ne bloque pas la redirection).
+		void notifierNouveauBesoin(id);
 		throw redirect(303, `/besoins/${id}`);
 	}
 };

@@ -172,6 +172,26 @@ export const document = sqliteTable('document', {
 		.default(sql`(unixepoch())`)
 });
 
+/**
+ * Abonnement Web Push d'un utilisateur (un par appareil/navigateur).
+ * `endpoint` unique = identifiant du push service ; `p256dh`/`auth` = clés de
+ * chiffrement du client. Supprimé si le push service répond 404/410 (périmé).
+ */
+export const pushSubscription = sqliteTable('push_subscription', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	endpoint: text('endpoint').notNull().unique(),
+	p256dh: text('p256dh').notNull(),
+	auth: text('auth').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Session = typeof session.$inferSelect;
@@ -180,3 +200,4 @@ export type Poste = typeof poste.$inferSelect;
 export type AuditLog = typeof auditLog.$inferSelect;
 export type DocumentType = typeof documentType.$inferSelect;
 export type DocumentRow = typeof document.$inferSelect;
+export type PushSubscription = typeof pushSubscription.$inferSelect;
