@@ -60,9 +60,10 @@
 	);
 	const hauteur = $derived((plage.endH - plage.startH) * PX_PAR_HEURE);
 
+	// Feu tricolore : à pourvoir (ambre) · complet (vert) · passé (gris).
 	const couleur: Record<StatutBesoin, string> = {
-		avenir: 'bg-bnssa-bg text-teal border-teal',
-		complet: 'bg-teal text-white border-teal-darker',
+		avenir: 'bg-warn-bg text-warn border-warn',
+		complet: 'bg-success-bg text-success border-success',
 		passe: 'bg-black/[.04] text-muted border-nav-inactive'
 	};
 
@@ -212,7 +213,7 @@
 
 <!-- Légende -->
 <div class="mt-4 flex flex-wrap items-center gap-4 text-[12px] text-muted">
-	<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-l-4 border-teal bg-bnssa-bg"></span> À venir</span>
-	<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-l-4 border-teal-darker bg-teal"></span> Complet</span>
+	<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-l-4 border-warn bg-warn-bg"></span> À venir (à pourvoir)</span>
+	<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-l-4 border-success bg-success-bg"></span> Complet</span>
 	<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-l-4 border-nav-inactive bg-black/[.04]"></span> Passé</span>
 </div>

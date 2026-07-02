@@ -9,9 +9,10 @@
 		complet: 'Complet',
 		passe: 'Passé'
 	};
+	// Feu tricolore : à pourvoir (ambre) · complet (vert) · passé (gris).
 	const statutClass: Record<StatutBesoin, string> = {
-		avenir: 'bg-bnssa-bg text-teal',
-		complet: 'bg-teal text-white',
+		avenir: 'bg-warn-bg text-warn',
+		complet: 'bg-success-bg text-success',
 		passe: 'bg-black/5 text-muted'
 	};
 

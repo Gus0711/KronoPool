@@ -52,6 +52,11 @@ export default {
 				warn: {
 					DEFAULT: '#b8862f',
 					bg: '#fdf1dd'
+				},
+				// Vert « complet » (feu tricolore des statuts de besoin).
+				success: {
+					DEFAULT: '#0b6b45',
+					bg: '#d6f2e3'
 				}
 			},
 			fontFamily: {
