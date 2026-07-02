@@ -27,6 +27,15 @@
 		'PushManager' in window &&
 		'Notification' in window;
 
+	async function enregistrerAbonnement(sub: PushSubscription): Promise<boolean> {
+		const res = await fetch('/compte/notifications', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(sub.toJSON())
+		});
+		return res.ok;
+	}
+
 	onMount(async () => {
 		if (!publicKey || !supporte()) {
 			etat = 'non-supporte';
@@ -35,8 +44,16 @@
 		try {
 			const reg = await navigator.serviceWorker.ready;
 			const sub = await reg.pushManager.getSubscription();
-			if (Notification.permission === 'denied') etat = 'bloque';
-			else etat = sub ? 'on' : 'off';
+			if (Notification.permission === 'denied') {
+				etat = 'bloque';
+			} else if (sub) {
+				// Un navigateur ne porte qu'un seul abonnement : on le (ré)associe à
+				// l'utilisateur courant (utile après un changement de compte).
+				await enregistrerAbonnement(sub).catch(() => {});
+				etat = 'on';
+			} else {
+				etat = 'off';
+			}
 		} catch {
 			etat = 'non-supporte';
 		}
@@ -56,12 +73,7 @@
 				userVisibleOnly: true,
 				applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource
 			});
-			const res = await fetch('/compte/notifications', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify(sub.toJSON())
-			});
-			if (!res.ok) throw new Error('save');
+			if (!(await enregistrerAbonnement(sub))) throw new Error('save');
 			etat = 'on';
 			toasts.success('Notifications activées ✓');
 		} catch {
