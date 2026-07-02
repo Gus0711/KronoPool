@@ -96,7 +96,12 @@ Ces règles se recoupent entre plusieurs fichiers (schéma, services, guards, UI
   le message « contacter le directeur par téléphone » (`PUBLIC_DIRECTEUR_TEL`).
 - **Génération de postes** : à la création d'un besoin, l'admin saisit un nombre de MNS + un nombre
   de BNSSA → autant de lignes `poste`. Suppression d'un besoin = `ON DELETE CASCADE` sur les
-  postes. L'édition refuse de réduire le nombre de postes sous le nombre de réservés.
+  postes. L'édition refuse de réduire le nombre de postes sous le nombre de réservés. Un besoin
+  **passé qui porte des réservations** ne peut plus être supprimé (protection de l'historique).
+- **Besoins récurrents** : la création récurrente génère un besoin par occurrence hebdomadaire
+  (fonction pure `src/lib/recurrence.ts`, plafond `MAX_OCCURRENCES`), tous liés par un `serieId`
+  (colonne nullable indexée sur `besoin`). La création groupée **ne notifie pas** (anti-spam).
+  `supprimerSerieFuture` ne retire que les occurrences futures **et libres**.
 - **Heures et pauses** : un besoin peut avoir une pause `pause_debut`/`pause_fin` (les deux ou
   aucune, incluse dans le créneau, temps effectif > 0 — validé par Zod). **Les récaps somment le
   temps effectif (pauses déduites)** des créneaux terminés ; l'amplitude brute est aussi affichée/

@@ -86,6 +86,60 @@ export const besoinCreate = z
 		path: ['pauseFin']
 	});
 
+/**
+ * Besoin **récurrent** (« tous les samedis 9h-13h… ») : mêmes règles de créneau et
+ * de pause que {@link besoinCreate}, mais avec une sélection de jours de la semaine
+ * (0 = dimanche … 6 = samedi) et un intervalle de dates `[dateDebut, dateFin]`.
+ * La génération des occurrences est faite côté service (`creerBesoinsRecurrents`).
+ */
+export const besoinRecurrent = z
+	.object({
+		jours: z.array(z.coerce.number().int().min(0).max(6)).min(1, 'Sélectionnez au moins un jour'),
+		dateDebut: dateISO,
+		dateFin: dateISO,
+		heureDebut: heure,
+		heureFin: heure,
+		pauseDebut: heureOptionnelle,
+		pauseFin: heureOptionnelle,
+		commentaire: z
+			.string()
+			.trim()
+			.max(500)
+			.optional()
+			.transform((v) => (v ? v : null)),
+		nbMns: z.coerce.number().int().min(0).max(50),
+		nbBnssa: z.coerce.number().int().min(0).max(50)
+	})
+	.refine((d) => d.dateFin >= d.dateDebut, {
+		message: 'La date de fin doit être postérieure ou égale à la date de début.',
+		path: ['dateFin']
+	})
+	.refine((d) => d.heureFin > d.heureDebut, {
+		message: "L'heure de fin doit être après l'heure de début",
+		path: ['heureFin']
+	})
+	.refine((d) => d.nbMns + d.nbBnssa >= 1, {
+		message: 'Au moins un poste (MNS ou BNSSA) est requis',
+		path: ['nbBnssa']
+	})
+	.refine((d) => !!d.pauseDebut === !!d.pauseFin, {
+		message: 'Renseignez le début ET la fin de la pause, ou aucun des deux.',
+		path: ['pauseFin']
+	})
+	.refine(
+		(d) =>
+			!d.pauseDebut || !d.pauseFin || (d.pauseDebut >= d.heureDebut && d.pauseFin <= d.heureFin),
+		{ message: 'La pause doit être comprise dans le créneau.', path: ['pauseDebut'] }
+	)
+	.refine((d) => !d.pauseDebut || !d.pauseFin || d.pauseFin > d.pauseDebut, {
+		message: 'La fin de pause doit être après le début de pause.',
+		path: ['pauseFin']
+	})
+	.refine((d) => decompteHeures(d.heureDebut, d.heureFin, d.pauseDebut, d.pauseFin).effectif > 0, {
+		message: 'Le temps de travail effectif doit être positif.',
+		path: ['pauseFin']
+	});
+
 /** Intervenant (création/édition) — hors mot de passe. */
 export const intervenantSchema = z.object({
 	nom: z.string().trim().min(1, 'Nom requis').max(100),

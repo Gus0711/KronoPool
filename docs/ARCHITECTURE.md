@@ -99,6 +99,17 @@ Chaque créneau a une **amplitude** (`heure_fin − heure_debut`) et un **temps 
 `services/recap-global.ts`) somment le **temps effectif** des créneaux **terminés**
 (`heure_fin` passée) sur la période ; les exports CSV donnent les deux colonnes.
 
+### Besoins récurrents (série)
+
+La création récurrente (`(admin)/besoins/recurrent`) génère **un besoin par occurrence** hebdomadaire
+(jours cochés × intervalle de dates, plafonné à `MAX_OCCURRENCES = 52`) — l'énumération des dates est
+une fonction pure et testée (`src/lib/recurrence.ts`, réutilisée côté serveur *et* pour l'aperçu
+live du formulaire). Tous les besoins générés ensemble partagent un `serieId` (colonne nullable sur
+`besoin`, indexée). La création groupée **ne déclenche pas** de notifications push (éviter une rafale
+lors de la planification d'une saison). La fiche besoin affiche un badge « série » et permet de
+supprimer les occurrences **futures et libres** de la série en un clic (`supprimerSerieFuture` —
+épargne le passé et les réservations, symétrique de la protection de `supprimerBesoin`).
+
 ### Historique des interventions (admin)
 
 La fiche intervenant (`(admin)/intervenants/[id]`) affiche l'**historique** de ses créneaux

@@ -29,9 +29,12 @@ Interface **en français**, fuseau **Europe/Paris**. Installable en **PWA**, ave
 - **Planning** : vue semaine (feu tricolore ambre = à pourvoir / vert = complet / gris = passé)
   + vue liste ; création d'un besoin par clic sur un créneau.
 - **Besoins** : création (date, horaires, **pause** optionnelle à horaire précis, nb MNS + nb
-  BNSSA → génération des postes), édition, suppression ; par poste : **libérer** (tracé dans
-  `audit_log`), **assigner manuellement** un intervenant, supprimer un poste libre. Un besoin
-  **passé qui porte des réservations** est protégé (suppression refusée — c'est de l'historique).
+  BNSSA → génération des postes) ; **création récurrente** (« tous les samedis 9h-13h, 2 MNS »
+  jusqu'à une date de fin → un besoin par date, regroupés en **série**) ; édition, suppression ;
+  par poste : **libérer** (tracé dans `audit_log`), **assigner manuellement** un intervenant,
+  supprimer un poste libre. Un besoin **passé qui porte des réservations** est protégé
+  (suppression refusée — c'est de l'historique). Une **série** se supprime en un clic (occurrences
+  futures et libres uniquement ; les réservées/passées sont conservées).
 - **Intervenants** : création, édition, activation/désactivation (sessions invalidées),
   réinitialisation de mot de passe, documents + état de **conformité**, **historique des
   interventions** (créneaux passés, total d'heures effectives, filtre de période + export CSV).

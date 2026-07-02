@@ -3,7 +3,7 @@
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import { toasts } from '$lib/toast';
 	import { formatJour, formatPlage, formatEffectif } from '$lib/format';
-	import { ArrowLeft, Pencil, Trash2, Unlock, Phone, UserPlus } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Unlock, Phone, UserPlus, Repeat } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -41,6 +41,13 @@
 				: 'Supprimer définitivement ce besoin ?';
 		if (!confirm(msg)) e.preventDefault();
 	}
+
+	function confirmSuppressionSerie(e: SubmitEvent) {
+		const msg =
+			`Supprimer les occurrences FUTURES et libres de cette série (${d.serieCount} au total) ?\n\n` +
+			'Les créneaux déjà réservés ou passés seront conservés.';
+		if (!confirm(msg)) e.preventDefault();
+	}
 </script>
 
 <svelte:head><title>Détail besoin · KronoPool</title></svelte:head>
@@ -50,6 +57,11 @@
 </a>
 
 {#if form?.action === 'supprimer' && form?.error}
+	<div class="mb-4 rounded-cta border border-danger/20 bg-danger-bg px-3 py-2 text-[13px] font-medium text-danger">
+		{form.error}
+	</div>
+{/if}
+{#if form?.action === 'supprimerSerie' && form?.error}
 	<div class="mb-4 rounded-cta border border-danger/20 bg-danger-bg px-3 py-2 text-[13px] font-medium text-danger">
 		{form.error}
 	</div>
@@ -76,6 +88,20 @@
 		</form>
 	</div>
 </div>
+
+{#if d.serieId}
+	<div class="card-lagon mb-6 flex flex-wrap items-center justify-between gap-3">
+		<div class="flex items-center gap-2 text-[13px] text-muted">
+			<Repeat size={16} class="shrink-0 text-teal" />
+			Fait partie d'une <span class="font-semibold text-ink">série récurrente</span> de {d.serieCount} besoin(s).
+		</div>
+		<form method="POST" action="?/supprimerSerie" onsubmit={confirmSuppressionSerie}>
+			<button class="inline-flex items-center gap-1.5 rounded-cta border border-danger/30 bg-danger-bg px-3 py-2 text-[13px] font-semibold text-danger" type="submit">
+				<Trash2 size={15} /> Supprimer les occurrences futures
+			</button>
+		</form>
+	</div>
+{/if}
 
 {#if showEdit}
 	<div class="card-lagon mb-6 max-w-xl">

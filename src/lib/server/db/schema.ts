@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 
 /**
  * Modèle de données KronoPool (CDC §5).
@@ -60,31 +60,43 @@ export const session = sqliteTable('session', {
 	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull()
 });
 
-export const besoin = sqliteTable('besoin', {
-	id: text('id')
-		.primaryKey()
-		.$defaultFn(() => crypto.randomUUID()),
-	/** `YYYY-MM-DD` (heure locale Europe/Paris). */
-	date: text('date').notNull(),
-	/** `HH:MM`. */
-	heureDebut: text('heure_debut').notNull(),
-	/** `HH:MM`. */
-	heureFin: text('heure_fin').notNull(),
-	/** Début de pause `HH:MM` — nullable. Renseigné avec {@link pauseFin} ou aucun. */
-	pauseDebut: text('pause_debut'),
-	/** Fin de pause `HH:MM` — nullable. La pause est déduite du temps effectif. */
-	pauseFin: text('pause_fin'),
-	commentaire: text('commentaire'),
-	createdBy: text('created_by')
-		.notNull()
-		.references(() => user.id),
-	createdAt: integer('created_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`),
-	updatedAt: integer('updated_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`)
-});
+export const besoin = sqliteTable(
+	'besoin',
+	{
+		id: text('id')
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		/** `YYYY-MM-DD` (heure locale Europe/Paris). */
+		date: text('date').notNull(),
+		/** `HH:MM`. */
+		heureDebut: text('heure_debut').notNull(),
+		/** `HH:MM`. */
+		heureFin: text('heure_fin').notNull(),
+		/** Début de pause `HH:MM` — nullable. Renseigné avec {@link pauseFin} ou aucun. */
+		pauseDebut: text('pause_debut'),
+		/** Fin de pause `HH:MM` — nullable. La pause est déduite du temps effectif. */
+		pauseFin: text('pause_fin'),
+		commentaire: text('commentaire'),
+		/**
+		 * Identifiant de **série** : regroupe les besoins générés ensemble par la
+		 * création récurrente (« tous les samedis… »). `null` = besoin isolé.
+		 * Permet de gérer la série (badge, suppression groupée des occurrences futures).
+		 */
+		serieId: text('serie_id'),
+		createdBy: text('created_by')
+			.notNull()
+			.references(() => user.id),
+		createdAt: integer('created_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`),
+		updatedAt: integer('updated_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+	},
+	(t) => ({
+		serieIdx: index('besoin_serie_id_idx').on(t.serieId)
+	})
+);
 
 export const poste = sqliteTable('poste', {
 	id: text('id')

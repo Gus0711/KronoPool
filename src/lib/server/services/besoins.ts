@@ -3,6 +3,7 @@ import { db } from '../db';
 import { auditLog, besoin, poste, user, type Niveau } from '../db/schema';
 import { parisNowKey, posteKey } from '../time';
 import { estEligible } from './eligibilite';
+import { occurrencesHebdo } from '$lib/recurrence';
 
 export type StatutBesoin = 'avenir' | 'complet' | 'passe';
 
@@ -70,6 +71,59 @@ export async function creerBesoin(
 	});
 }
 
+/**
+ * Création **récurrente** : génère un besoin (avec ses postes) pour chaque
+ * occurrence hebdomadaire des `jours` entre `dateDebut` et `dateFin` inclus.
+ * Tous les besoins générés partagent un même `serieId` (gestion groupée). Le
+ * tout dans **une transaction** : si l'insertion échoue, rien n'est créé.
+ *
+ * Choix : la création groupée **ne déclenche pas** de notifications push (éviter
+ * une rafale de dizaines de notifications lors de la planification d'une saison ;
+ * les intervenants voient les créneaux dans l'app). Les besoins créés à l'unité,
+ * eux, notifient toujours.
+ */
+export async function creerBesoinsRecurrents(
+	adminId: string,
+	data: {
+		jours: number[];
+		dateDebut: string;
+		dateFin: string;
+		heureDebut: string;
+		heureFin: string;
+		pauseDebut: string | null;
+		pauseFin: string | null;
+		commentaire: string | null;
+		nbMns: number;
+		nbBnssa: number;
+	}
+): Promise<{ serieId: string; count: number }> {
+	const dates = occurrencesHebdo(data.jours, data.dateDebut, data.dateFin);
+	if (dates.length === 0) return { serieId: '', count: 0 };
+
+	const serieId = crypto.randomUUID();
+	return db.transaction(async (tx) => {
+		for (const date of dates) {
+			const id = crypto.randomUUID();
+			await tx.insert(besoin).values({
+				id,
+				date,
+				heureDebut: data.heureDebut,
+				heureFin: data.heureFin,
+				pauseDebut: data.pauseDebut,
+				pauseFin: data.pauseFin,
+				commentaire: data.commentaire,
+				serieId,
+				createdBy: adminId
+			});
+			const postes: { besoinId: string; niveauRequis: Niveau }[] = [];
+			for (let i = 0; i < data.nbMns; i++) postes.push({ besoinId: id, niveauRequis: 'MNS' });
+			for (let i = 0; i < data.nbBnssa; i++) postes.push({ besoinId: id, niveauRequis: 'BNSSA' });
+			if (postes.length > 0) await tx.insert(poste).values(postes);
+		}
+		return { serieId, count: dates.length };
+	});
+}
+
 /** Liste des besoins avec remplissage + statut, séparés À venir / Passés. */
 export async function listerBesoins(): Promise<{ aVenir: BesoinResume[]; passes: BesoinResume[] }> {
 	const rows = await db
@@ -111,6 +165,10 @@ export interface PosteDetail {
 
 export interface BesoinDetail extends BesoinResume {
 	postes: PosteDetail[];
+	/** Série de récurrence à laquelle appartient le besoin (`null` = besoin isolé). */
+	serieId: string | null;
+	/** Nombre total de besoins de la série (1 si isolé). */
+	serieCount: number;
 }
 
 /** Détail d'un besoin : postes + intervenant assigné (CDC §6.2). */
@@ -143,6 +201,17 @@ export async function detailBesoin(id: string): Promise<BesoinDetail | null> {
 
 	const total = postes.length;
 	const pourvus = postes.filter((p) => p.reservedBy).length;
+
+	let serieCount = 1;
+	if (b.serieId) {
+		const c = await db
+			.select({ n: sql<number>`count(*)` })
+			.from(besoin)
+			.where(eq(besoin.serieId, b.serieId))
+			.get();
+		serieCount = c?.n ?? 1;
+	}
+
 	return {
 		id: b.id,
 		date: b.date,
@@ -154,7 +223,9 @@ export async function detailBesoin(id: string): Promise<BesoinDetail | null> {
 		total,
 		pourvus,
 		statut: calcStatut(b.date, b.heureFin, total, pourvus),
-		postes
+		postes,
+		serieId: b.serieId,
+		serieCount
 	};
 }
 
@@ -258,6 +329,40 @@ export async function supprimerBesoin(id: string): Promise<SuppressionBesoinResu
 		if (estPasse && aReservations) return { ok: false, reason: 'passe_avec_reservations' };
 		await tx.delete(besoin).where(eq(besoin.id, id));
 		return { ok: true };
+	});
+}
+
+export interface SuppressionSerieResult {
+	/** Occurrences futures et libres effectivement supprimées. */
+	supprimes: number;
+	/** Occurrences conservées (passées, en cours, ou portant des réservations). */
+	conserves: number;
+}
+
+/**
+ * Supprime les occurrences **futures et libres** d'une série (création récurrente).
+ * Épargne systématiquement : les besoins déjà commencés/passés (historique) et
+ * ceux qui portent au moins une réservation (engagements). Idempotent, en
+ * transaction. Renvoie le décompte supprimés / conservés pour le retour admin.
+ */
+export async function supprimerSerieFuture(serieId: string): Promise<SuppressionSerieResult> {
+	return db.transaction(async (tx) => {
+		const now = parisNowKey();
+		const besoins = await tx.select().from(besoin).where(eq(besoin.serieId, serieId));
+		let supprimes = 0;
+		let conserves = 0;
+		for (const b of besoins) {
+			const estFutur = posteKey(b.date, b.heureDebut) > now;
+			const postes = await tx.select().from(poste).where(eq(poste.besoinId, b.id));
+			const aReservations = postes.some((p) => p.reservedBy);
+			if (estFutur && !aReservations) {
+				await tx.delete(besoin).where(eq(besoin.id, b.id));
+				supprimes++;
+			} else {
+				conserves++;
+			}
+		}
+		return { supprimes, conserves };
 	});
 }
 

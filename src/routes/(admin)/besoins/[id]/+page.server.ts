@@ -8,6 +8,7 @@ import {
 	modifierBesoin,
 	supprimerBesoin,
 	supprimerPoste,
+	supprimerSerieFuture,
 	type AssignationResult
 } from '$lib/server/services/besoins';
 import { listerIntervenants } from '$lib/server/services/intervenants';
@@ -123,5 +124,18 @@ export const actions: Actions = {
 			});
 		}
 		throw redirect(303, '/besoins');
+	},
+
+	supprimerSerie: async ({ locals, params }) => {
+		requireAdmin(locals.user);
+		const detail = await detailBesoin(params.id);
+		if (!detail?.serieId) {
+			return fail(400, { action: 'supprimerSerie', error: "Ce besoin ne fait pas partie d'une série." });
+		}
+		const res = await supprimerSerieFuture(detail.serieId);
+		throw redirect(
+			303,
+			`/besoins?serie_supprimes=${res.supprimes}&serie_conserves=${res.conserves}`
+		);
 	}
 };
