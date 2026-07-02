@@ -4,6 +4,7 @@ import { user, type Niveau } from '../db/schema';
 import { hashPassword } from '../auth/password';
 import { invalidateUserSessions } from '../auth/session';
 import { statutValidite, estEnAlerte, type ValiditeInfo } from './diplomes';
+import { conformiteEnMasse } from './documents';
 
 export interface IntervenantView {
 	id: string;
@@ -18,9 +19,11 @@ export interface IntervenantView {
 	titre: ValiditeInfo;
 	pse: ValiditeInfo;
 	enAlerte: boolean;
+	/** Nb de documents obligatoires manquants ou expirés (liste admin). */
+	docsManquants: number;
 }
 
-function toView(u: typeof user.$inferSelect): IntervenantView {
+function toView(u: typeof user.$inferSelect, docsManquants = 0): IntervenantView {
 	const titre = statutValidite(u.dateValiditeTitre);
 	const pse = statutValidite(u.dateValiditePse);
 	return {
@@ -35,7 +38,8 @@ function toView(u: typeof user.$inferSelect): IntervenantView {
 		dateValiditePse: u.dateValiditePse,
 		titre,
 		pse,
-		enAlerte: estEnAlerte(titre) || estEnAlerte(pse)
+		enAlerte: estEnAlerte(titre) || estEnAlerte(pse),
+		docsManquants
 	};
 }
 
@@ -45,7 +49,8 @@ export async function listerIntervenants(): Promise<IntervenantView[]> {
 		.from(user)
 		.where(eq(user.role, 'intervenant'))
 		.orderBy(user.nom, user.prenom);
-	return rows.map(toView);
+	const conformite = await conformiteEnMasse(rows.map((u) => ({ id: u.id, niveau: u.niveau })));
+	return rows.map((u) => toView(u, conformite.get(u.id) ?? 0));
 }
 
 export async function getIntervenant(id: string): Promise<IntervenantView | null> {

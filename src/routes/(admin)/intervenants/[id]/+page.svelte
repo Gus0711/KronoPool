@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
+	import DocumentsSection from '$lib/components/DocumentsSection.svelte';
 	import { toasts } from '$lib/toast';
 	import { ArrowLeft, Power, KeyRound } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
@@ -106,4 +107,15 @@
 			</form>
 		</div>
 	</div>
+</div>
+
+<!-- Documents de l'intervenant -->
+<div class="mt-6">
+	<DocumentsSection
+		documents={data.documents}
+		types={data.typesDocuments}
+		conformite={data.conformite}
+		titre="Documents"
+		soustitre="Pièces justificatives de l'intervenant (carte d'identité, diplômes, PSE1…)."
+	/>
 </div>

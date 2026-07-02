@@ -3,7 +3,7 @@
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import ValiditePill from '$lib/components/ValiditePill.svelte';
 	import { toasts } from '$lib/toast';
-	import { UserPlus } from 'lucide-svelte';
+	import { UserPlus, FileWarning } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -105,6 +105,11 @@
 						{#if i.niveau}<NiveauBadge niveau={i.niveau} />{/if}
 						{#if !i.actif}
 							<span class="rounded-pill bg-black/5 px-2.5 py-1 text-[11px] font-bold text-muted">Inactif</span>
+						{/if}
+						{#if i.docsManquants > 0}
+							<span class="inline-flex items-center gap-1 rounded-pill bg-warn-bg px-2.5 py-1 text-[11px] font-bold text-warn" title="Documents obligatoires manquants ou expirés">
+								<FileWarning size={13} /> {i.docsManquants} doc{i.docsManquants > 1 ? 's' : ''}
+							</span>
 						{/if}
 					</div>
 					<span class="text-[13px] text-muted">{i.email}</span>

@@ -15,6 +15,13 @@
       "when": 1782943079865,
       "tag": "0001_lazy_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782981660252,
+      "tag": "0002_empty_hulk",
+      "breakpoints": true
     }
   ]
 }

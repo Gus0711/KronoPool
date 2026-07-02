@@ -10,9 +10,9 @@ import { mkdirSync } from 'node:fs';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { hash } from '@node-rs/argon2';
-import { user } from './schema.ts';
+import { user, documentType } from './schema.ts';
 
 const ARGON = { memoryCost: 19456, timeCost: 2, outputLen: 32, parallelism: 1 };
 
@@ -57,6 +57,25 @@ async function seedAdmin(
 	console.log(`✓ Admin ${n} créé : ${email} (mot de passe à changer à la 1ʳᵉ connexion).`);
 }
 
+/** Types de documents par défaut — seulement si la table est vide (idempotent). */
+async function seedDocumentTypes(db: ReturnType<typeof drizzle>): Promise<void> {
+	const [{ n }] = await db
+		.select({ n: sql<number>`count(*)` })
+		.from(documentType);
+	if (Number(n) > 0) {
+		console.log('• Types de documents déjà présents — ignoré.');
+		return;
+	}
+	await db.insert(documentType).values([
+		{ libelle: "Carte d'identité", obligatoire: true, niveauRequis: null, ordre: 1 },
+		{ libelle: 'Diplôme (BNSSA / MNS)', obligatoire: true, niveauRequis: null, ordre: 2 },
+		{ libelle: 'PSE1 (secourisme)', obligatoire: true, niveauRequis: null, ordre: 3 },
+		{ libelle: 'RIB', obligatoire: false, niveauRequis: null, ordre: 4 },
+		{ libelle: 'Autre', obligatoire: false, niveauRequis: null, ordre: 5 }
+	]);
+	console.log('✓ Types de documents par défaut créés.');
+}
+
 async function main(): Promise<void> {
 	const url = process.env.DATABASE_URL ?? 'file:./data/app.db';
 	ensureDataDir(url);
@@ -73,6 +92,9 @@ async function main(): Promise<void> {
 	console.log('→ Seed des comptes admin…');
 	await seedAdmin(db, 1);
 	await seedAdmin(db, 2);
+
+	console.log('→ Seed des types de documents…');
+	await seedDocumentTypes(db);
 
 	console.log('✔ Seed terminé.');
 	client.close();

@@ -6,12 +6,22 @@ import { user } from '$lib/server/db/schema';
 import { hashPassword, verifyPassword, PASSWORD_MIN_LENGTH } from '$lib/server/auth/password';
 import { requireUser } from '$lib/server/auth/guards';
 import { statutValidite } from '$lib/server/services/diplomes';
+import {
+	etatConformite,
+	getDocument,
+	listerDocumentsDe,
+	listerTypesActifs,
+	supprimerDocument,
+	traiterUploadForm
+} from '$lib/server/services/documents';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const u = requireUser(locals.user);
 	const full = await db.select().from(user).where(eq(user.id, u.id)).get();
 	if (!full) throw fail(404);
+
+	const estIntervenant = full.role === 'intervenant';
 
 	return {
 		infos: {
@@ -25,11 +35,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 		validites: {
 			titre: { date: full.dateValiditeTitre, ...statutValidite(full.dateValiditeTitre) },
 			pse: { date: full.dateValiditePse, ...statutValidite(full.dateValiditePse) }
-		}
+		},
+		documents: estIntervenant ? await listerDocumentsDe(full.id) : [],
+		typesDocuments: estIntervenant ? await listerTypesActifs() : [],
+		conformite: estIntervenant
+			? await etatConformite({ id: full.id, niveau: full.niveau })
+			: { lignes: [], manquants: 0, enAlerte: false }
 	};
 };
 
-const schema = z
+const mdpSchema = z
 	.object({
 		current: z.string().min(1, 'Mot de passe actuel requis'),
 		password: z.string().min(PASSWORD_MIN_LENGTH, `Au moins ${PASSWORD_MIN_LENGTH} caractères`),
@@ -41,23 +56,23 @@ const schema = z
 	});
 
 export const actions: Actions = {
-	default: async ({ request, locals }) => {
+	motDePasse: async ({ request, locals }) => {
 		const u = requireUser(locals.user);
 		const form = await request.formData();
-		const parsed = schema.safeParse({
+		const parsed = mdpSchema.safeParse({
 			current: form.get('current'),
 			password: form.get('password'),
 			confirm: form.get('confirm')
 		});
 		if (!parsed.success) {
-			return fail(400, { error: parsed.error.issues[0]?.message ?? 'Champs invalides' });
+			return fail(400, { action: 'motDePasse', error: parsed.error.issues[0]?.message ?? 'Champs invalides' });
 		}
 
 		const full = await db.select().from(user).where(eq(user.id, u.id)).get();
-		if (!full) return fail(404, { error: 'Compte introuvable.' });
+		if (!full) return fail(404, { action: 'motDePasse', error: 'Compte introuvable.' });
 
 		const ok = await verifyPassword(full.passwordHash, parsed.data.current);
-		if (!ok) return fail(400, { error: 'Mot de passe actuel incorrect.' });
+		if (!ok) return fail(400, { action: 'motDePasse', error: 'Mot de passe actuel incorrect.' });
 
 		const passwordHash = await hashPassword(parsed.data.password);
 		await db
@@ -65,6 +80,27 @@ export const actions: Actions = {
 			.set({ passwordHash, mustChangePassword: false, updatedAt: new Date() })
 			.where(eq(user.id, u.id));
 
-		return { success: true };
+		return { action: 'motDePasse', success: true };
+	},
+
+	uploadDocument: async ({ request, locals }) => {
+		const u = requireUser(locals.user);
+		const form = await request.formData();
+		const res = await traiterUploadForm(form, u.id, u.id);
+		if (!res.ok) return fail(400, { action: 'uploadDocument', error: res.error });
+		return { action: 'uploadDocument', success: true };
+	},
+
+	supprimerDocument: async ({ request, locals }) => {
+		const u = requireUser(locals.user);
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const doc = await getDocument(id);
+		// Un intervenant ne supprime que SES documents.
+		if (!doc || doc.userId !== u.id) {
+			return fail(404, { action: 'supprimerDocument', error: 'Document introuvable.' });
+		}
+		await supprimerDocument(id);
+		return { action: 'supprimerDocument', success: true };
 	}
 };

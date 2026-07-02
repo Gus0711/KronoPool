@@ -106,3 +106,28 @@ export const intervenantSchema = z.object({
 export const motDePasse = z
 	.string()
 	.min(PASSWORD_MIN_LENGTH, `Au moins ${PASSWORD_MIN_LENGTH} caractères`);
+
+/** Type de document (catalogue admin) — création/édition. */
+export const documentTypeSchema = z.object({
+	libelle: z.string().trim().min(1, 'Libellé requis').max(80),
+	obligatoire: z
+		.union([z.literal('on'), z.literal('true'), z.literal('false'), z.null()])
+		.transform((v) => v === 'on' || v === 'true'),
+	niveauRequis: z
+		.enum(['MNS', 'BNSSA'])
+		.or(z.literal(''))
+		.nullish()
+		.transform((v) => (v ? v : null)),
+	ordre: z.coerce.number().int().min(0).max(999).default(0)
+});
+
+/** Champs texte d'un upload de document (le binaire est validé à part). */
+export const documentUploadSchema = z.object({
+	typeId: z
+		.string()
+		.trim()
+		.optional()
+		.or(z.literal(''))
+		.transform((v) => (v ? v : null)),
+	dateExpiration: dateOptionnelle
+});

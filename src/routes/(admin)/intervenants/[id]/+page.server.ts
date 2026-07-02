@@ -9,13 +9,26 @@ import {
 	modifierIntervenant,
 	reinitialiserMotDePasse
 } from '$lib/server/services/intervenants';
+import {
+	etatConformite,
+	getDocument,
+	listerDocumentsDe,
+	listerTypesActifs,
+	supprimerDocument,
+	traiterUploadForm
+} from '$lib/server/services/documents';
 import { intervenantSchema, motDePasse } from '$lib/server/validation';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const intervenant = await getIntervenant(params.id);
 	if (!intervenant) throw error(404, 'Intervenant introuvable');
-	return { intervenant };
+	return {
+		intervenant,
+		documents: await listerDocumentsDe(intervenant.id),
+		typesDocuments: await listerTypesActifs(),
+		conformite: await etatConformite({ id: intervenant.id, niveau: intervenant.niveau })
+	};
 };
 
 export const actions: Actions = {
@@ -63,5 +76,27 @@ export const actions: Actions = {
 		}
 		await reinitialiserMotDePasse(params.id, mdp.data);
 		return { action: 'reset', ok: true };
+	},
+
+	uploadDocument: async ({ request, locals, params }) => {
+		const admin = requireAdmin(locals.user);
+		const intervenant = await getIntervenant(params.id);
+		if (!intervenant) return fail(404, { action: 'uploadDocument', error: 'Intervenant introuvable.' });
+		const form = await request.formData();
+		const res = await traiterUploadForm(form, params.id, admin.id);
+		if (!res.ok) return fail(400, { action: 'uploadDocument', error: res.error });
+		return { action: 'uploadDocument', success: true };
+	},
+
+	supprimerDocument: async ({ request, locals, params }) => {
+		requireAdmin(locals.user);
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const doc = await getDocument(id);
+		if (!doc || doc.userId !== params.id) {
+			return fail(404, { action: 'supprimerDocument', error: 'Document introuvable.' });
+		}
+		await supprimerDocument(id);
+		return { action: 'supprimerDocument', success: true };
 	}
 };

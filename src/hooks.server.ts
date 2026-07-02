@@ -20,7 +20,14 @@ const FORCE_CHANGE_PATH = '/changer-mot-de-passe';
 const LOGOUT_PATH = '/deconnexion';
 
 // Routes réservées à l'admin.
-const ADMIN_PREFIXES = ['/dashboard', '/besoins', '/intervenants', '/recap', '/planning'];
+const ADMIN_PREFIXES = [
+	'/dashboard',
+	'/besoins',
+	'/intervenants',
+	'/recap',
+	'/planning',
+	'/documents-types'
+];
 // Routes réservées à l'intervenant.
 const INTERVENANT_PREFIXES = ['/creneaux', '/mes-reservations', '/mon-recap'];
 

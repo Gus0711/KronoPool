@@ -116,9 +116,67 @@ export const auditLog = sqliteTable('audit_log', {
 		.default(sql`(unixepoch())`)
 });
 
+/**
+ * Catalogue des **types de documents** (configurable par l'admin).
+ * Un type peut être marqué `obligatoire`. `niveauRequis` restreint l'obligation
+ * à un niveau (ex. « Diplôme MNS » obligatoire seulement pour les MNS) ; `null`
+ * = applicable à tous les intervenants. `actif = false` désactive sans supprimer
+ * (les documents déjà rattachés sont conservés).
+ */
+export const documentType = sqliteTable('document_type', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	libelle: text('libelle').notNull(),
+	obligatoire: integer('obligatoire', { mode: 'boolean' }).notNull().default(false),
+	/** `MNS` | `BNSSA` ; `null` = tous niveaux. */
+	niveauRequis: text('niveau_requis', { enum: NIVEAUX }),
+	ordre: integer('ordre').notNull().default(0),
+	actif: integer('actif', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+/**
+ * Document téléversé rattaché à un intervenant. Le binaire vit sur le disque
+ * (`storedName` = nom aléatoire, jamais le nom client), seules les métadonnées
+ * sont en base. `typeId` → `set null` : supprimer un type ne détruit pas les
+ * fichiers déjà envoyés. `dateExpiration` (optionnelle) alimente la conformité.
+ */
+export const document = sqliteTable('document', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	typeId: text('type_id').references(() => documentType.id, { onDelete: 'set null' }),
+	/** Nom d'origine du fichier (affichage / téléchargement). */
+	nomFichier: text('nom_fichier').notNull(),
+	/** Nom de stockage sur disque (uuid + extension). */
+	storedName: text('stored_name').notNull(),
+	mimeType: text('mime_type').notNull(),
+	/** Taille en octets. */
+	taille: integer('taille').notNull(),
+	/** Date d'expiration `YYYY-MM-DD` — nullable. */
+	dateExpiration: text('date_expiration'),
+	uploadedBy: text('uploaded_by')
+		.notNull()
+		.references(() => user.id),
+	uploadedAt: integer('uploaded_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Session = typeof session.$inferSelect;
 export type Besoin = typeof besoin.$inferSelect;
 export type Poste = typeof poste.$inferSelect;
 export type AuditLog = typeof auditLog.$inferSelect;
+export type DocumentType = typeof documentType.$inferSelect;
+export type DocumentRow = typeof document.$inferSelect;

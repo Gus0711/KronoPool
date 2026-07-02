@@ -4,6 +4,7 @@
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import ValiditePill from '$lib/components/ValiditePill.svelte';
+	import DocumentsSection from '$lib/components/DocumentsSection.svelte';
 	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
 	import { ArrowLeft, LogOut } from 'lucide-svelte';
@@ -15,7 +16,7 @@
 	const estIntervenant = $derived(data.user?.role === 'intervenant');
 
 	$effect(() => {
-		if (form?.success) toasts.success('Mot de passe modifié ✓');
+		if (form?.action === 'motDePasse' && form.success) toasts.success('Mot de passe modifié ✓');
 	});
 </script>
 
@@ -63,16 +64,30 @@
 				</dl>
 			</div>
 
+			<!-- Mes documents (intervenants) -->
+			{#if estIntervenant}
+				<div class="mb-4">
+					<DocumentsSection
+						documents={data.documents}
+						types={data.typesDocuments}
+						conformite={data.conformite}
+						titre="Mes documents"
+						soustitre="Carte d'identité, diplôme, PSE1…"
+					/>
+				</div>
+			{/if}
+
 			<!-- Changement mot de passe -->
 			<div class="card-lagon mb-4">
 				<h2 class="mb-3 font-display text-[15px] font-bold text-ink">Changer mon mot de passe</h2>
-				{#if form?.error}
+				{#if form?.action === 'motDePasse' && form?.error}
 					<div class="mb-3 rounded-cta border border-danger/20 bg-danger-bg px-3 py-2 text-[13px] font-medium text-danger" role="alert">
 						{form.error}
 					</div>
 				{/if}
 				<form
 					method="POST"
+					action="?/motDePasse"
 					use:enhance={() => {
 						loading = true;
 						return async ({ update }) => {

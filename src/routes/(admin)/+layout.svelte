@@ -9,6 +9,7 @@
 		Users,
 		BarChart3,
 		CalendarRange,
+		FileCog,
 		UserCircle,
 		LogOut,
 		Menu,
@@ -25,7 +26,8 @@
 		{ href: '/besoins', label: 'Besoins', icon: CalendarClock },
 		{ href: '/intervenants', label: 'Intervenants', icon: Users },
 		{ href: '/recap', label: "Récap d'heures", icon: BarChart3 },
-		{ href: '/planning', label: 'Planning', icon: CalendarRange }
+		{ href: '/planning', label: 'Planning', icon: CalendarRange },
+		{ href: '/documents-types', label: 'Types de documents', icon: FileCog }
 	];
 
 	function isActive(href: string, path: string): boolean {

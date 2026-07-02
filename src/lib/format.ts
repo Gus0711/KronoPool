@@ -87,3 +87,10 @@ export function formatCreneauComplet(
 export function initiales(prenom: string, nom: string): string {
 	return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
 }
+
+/** Taille de fichier lisible (`2,3 Mo`, `512 Ko`, `48 o`). */
+export function formatTaille(octets: number): string {
+	if (octets < 1024) return `${octets} o`;
+	if (octets < 1024 * 1024) return `${Math.round(octets / 1024)} Ko`;
+	return `${(octets / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
+}
