@@ -16,8 +16,16 @@
 	let loading = $state(false);
 
 	const estIntervenant = $derived(data.user?.role === 'intervenant');
-	// Variante webcal:// pour l'abonnement en un clic (ouvre l'app calendrier).
+	// Abonnement calendrier — liens adaptés à chaque plateforme :
+	// - webcal:// : pris en charge par Apple Calendrier (iOS/macOS). Android n'a
+	//   aucun handler pour ce schéma → il faut passer par Google Agenda / le lien.
+	// - Google Agenda : deep link « ajouter par URL » (ordinateur surtout).
 	const webcalUrl = $derived(data.calendrierUrl?.replace(/^https?:\/\//, 'webcal://') ?? '');
+	const googleUrl = $derived(
+		data.calendrierUrl
+			? `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(data.calendrierUrl)}`
+			: ''
+	);
 
 	$effect(() => {
 		if (form?.action === 'motDePasse' && form.success) toasts.success('Mot de passe modifié ✓');
@@ -142,9 +150,28 @@
 						</form>
 					{:else}
 						<div class="flex flex-col gap-2">
-							<a href={webcalUrl} class="cta-sand inline-flex items-center justify-center gap-2" use:ripple>
-								<CalendarPlus size={18} /> S'abonner en un clic
+							<a
+								href={googleUrl}
+								target="_blank"
+								rel="noopener"
+								class="cta-sand inline-flex items-center justify-center gap-2"
+								use:ripple
+							>
+								<CalendarPlus size={18} /> Ajouter à Google Agenda
 							</a>
+							<a
+								href={webcalUrl}
+								class="inline-flex items-center justify-center gap-2 rounded-cta border border-card-border bg-white px-4 py-3 text-[14px] font-semibold text-teal"
+							>
+								<CalendarPlus size={18} /> Apple Calendrier (iPhone/Mac)
+							</a>
+
+							<p class="mt-1 text-[12px] text-muted">
+								Sur <span class="font-semibold">Android</span>, le bouton Google ouvre l'ajout par
+								URL (au besoin, copiez le lien ci-dessous et ajoutez-le dans Google Agenda sur
+								ordinateur : <span class="whitespace-nowrap">Autres agendas → À partir de l'URL</span>).
+							</p>
+
 							<div class="flex items-center gap-2">
 								<input class="field flex-1 text-[12px]" type="text" value={data.calendrierUrl} readonly onclick={(e) => e.currentTarget.select()} />
 								<button class="inline-flex shrink-0 items-center gap-1 rounded-cta border border-card-border bg-white px-3 py-2.5 text-[13px] font-semibold text-teal" type="button" onclick={copier}>
