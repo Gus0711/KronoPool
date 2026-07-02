@@ -2,10 +2,15 @@
  * Génération CSV (export récap). Séparateur `;` (compatible Excel FR) + BOM UTF-8.
  */
 function escape(value: string): string {
-	if (/[";\n\r]/.test(value)) {
-		return `"${value.replace(/"/g, '""')}"`;
+	// Neutralise l'injection de formule (Excel/LibreOffice) : une cellule commençant
+	// par = + - @ (ou TAB/CR) serait sinon interprétée comme une formule. On préfixe
+	// d'une apostrophe avant le quoting habituel du séparateur/guillemets.
+	let v = value;
+	if (/^[=+\-@\t\r]/.test(v)) v = `'${v}`;
+	if (/[";\n\r]/.test(v)) {
+		return `"${v.replace(/"/g, '""')}"`;
 	}
-	return value;
+	return v;
 }
 
 export function toCSV(rows: (string | number)[][]): string {

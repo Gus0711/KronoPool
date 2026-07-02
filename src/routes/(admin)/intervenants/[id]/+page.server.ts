@@ -17,17 +17,32 @@ import {
 	supprimerDocument,
 	traiterUploadForm
 } from '$lib/server/services/documents';
+import { recapHeures } from '$lib/server/services/reservations';
 import { intervenantSchema, motDePasse } from '$lib/server/validation';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params }) => {
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const clean = (v: string | null): string | undefined => (v && DATE_RE.test(v) ? v : undefined);
+
+export const load: PageServerLoad = async ({ params, url }) => {
 	const intervenant = await getIntervenant(params.id);
 	if (!intervenant) throw error(404, 'Intervenant introuvable');
+	const from = clean(url.searchParams.get('from'));
+	const to = clean(url.searchParams.get('to'));
+	const [documents, typesDocuments, conformite, historique] = await Promise.all([
+		listerDocumentsDe(intervenant.id),
+		listerTypesActifs(),
+		etatConformite({ id: intervenant.id, niveau: intervenant.niveau }),
+		recapHeures(intervenant.id, from, to)
+	]);
 	return {
 		intervenant,
-		documents: await listerDocumentsDe(intervenant.id),
-		typesDocuments: await listerTypesActifs(),
-		conformite: await etatConformite({ id: intervenant.id, niveau: intervenant.niveau })
+		documents,
+		typesDocuments,
+		conformite,
+		historique,
+		from: from ?? '',
+		to: to ?? ''
 	};
 };
 

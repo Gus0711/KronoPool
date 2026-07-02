@@ -3,11 +3,17 @@
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import DocumentsSection from '$lib/components/DocumentsSection.svelte';
 	import { toasts } from '$lib/toast';
-	import { ArrowLeft, Power, KeyRound } from 'lucide-svelte';
+	import { formatJour, formatDuree, formatAmplitude, formatHeure } from '$lib/format';
+	import { aPause } from '$lib/heures';
+	import { ArrowLeft, Power, KeyRound, Download, Coffee } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	const i = $derived(data.intervenant);
+
+	const exportHref = $derived(
+		`/intervenants/${i.id}/export?from=${encodeURIComponent(data.from)}&to=${encodeURIComponent(data.to)}`
+	);
 
 	$effect(() => {
 		if (form?.action === 'modifier' && form.ok) toasts.success('Modifications enregistrées ✓');
@@ -107,6 +113,74 @@
 			</form>
 		</div>
 	</div>
+</div>
+
+<!-- Historique des interventions -->
+<div class="card-lagon mt-6">
+	<div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+		<div>
+			<h2 class="font-display text-[15px] font-bold text-ink">Interventions passées</h2>
+			<p class="text-[13px] text-muted">
+				Créneaux terminés réservés par l'intervenant, avec le temps de travail effectif.
+			</p>
+		</div>
+		<div class="text-right">
+			<div class="font-display text-[20px] font-bold text-teal">{formatDuree(data.historique.total)}</div>
+			<div class="text-[11px] text-muted">{data.historique.lignes.length} créneau(x)</div>
+		</div>
+	</div>
+
+	<form method="GET" class="mb-4 flex flex-wrap items-end gap-2">
+		<label class="flex flex-col gap-1">
+			<span class="text-[12px] font-semibold text-muted">Du</span>
+			<input class="field" type="date" name="from" value={data.from} />
+		</label>
+		<label class="flex flex-col gap-1">
+			<span class="text-[12px] font-semibold text-muted">Au</span>
+			<input class="field" type="date" name="to" value={data.to} />
+		</label>
+		<button class="rounded-cta bg-teal px-4 py-3 text-[14px] font-bold text-white" type="submit">OK</button>
+		{#if data.historique.lignes.length > 0}
+			<a
+				href={exportHref}
+				class="inline-flex items-center gap-2 rounded-cta border border-card-border bg-white px-4 py-3 text-[13px] font-semibold text-teal"
+				data-sveltekit-reload
+			>
+				<Download size={16} /> Exporter CSV
+			</a>
+		{/if}
+	</form>
+
+	{#if data.historique.lignes.length === 0}
+		<p class="rounded-cta border border-card-border bg-white px-3 py-4 text-center text-[13px] text-muted">
+			Aucune intervention passée sur cette période.
+		</p>
+	{:else}
+		<div class="flex flex-col gap-2">
+			{#each data.historique.lignes as l (l.posteId)}
+				<div class="flex items-center justify-between gap-3 rounded-cta border border-card-border bg-white px-3 py-2">
+					<div class="min-w-0">
+						<div class="font-display text-[14px] font-bold text-ink">{formatJour(l.date)}</div>
+						<div class="text-[12px] text-muted">{formatAmplitude(l.heureDebut, l.heureFin)}</div>
+						{#if aPause(l.pauseDebut, l.pauseFin)}
+							<div class="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-sand-dark">
+								<Coffee size={11} class="shrink-0" /> Pause {formatHeure(l.pauseDebut!)}–{formatHeure(l.pauseFin!)}
+							</div>
+						{/if}
+					</div>
+					<div class="flex items-center gap-3">
+						<NiveauBadge niveau={l.niveauRequis} />
+						<div class="text-right">
+							<div class="font-display text-[14px] font-bold text-teal">{formatDuree(l.effectif)}</div>
+							{#if aPause(l.pauseDebut, l.pauseFin)}
+								<div class="text-[11px] text-muted">brut {formatDuree(l.amplitude)}</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <!-- Documents de l'intervenant -->

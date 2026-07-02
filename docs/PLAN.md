@@ -1,5 +1,11 @@
 # Plan d'implémentation — KronoPool V1
 
+> **⚠️ Document historique (V1 livrée).** Ce plan a servi à construire la V1 et n'est plus mis à
+> jour. L'état réel du code est décrit dans [`ARCHITECTURE.md`](./ARCHITECTURE.md) et le README.
+> Écarts connus : les tests Playwright évoqués en phase 5 n'ont pas été mis en place (seul Vitest
+> existe) ; les features postérieures (documents, push, PWA, pauses, planning semaine) ne figurent
+> pas ici.
+
 Fil conducteur de construction. Source de vérité comportement : `CDC_planning-piscine_v1.md`.
 Source de vérité style : `docs/handoff/`. Découpage en phases livrables et vérifiables.
 

@@ -239,9 +239,26 @@ export async function modifierBesoin(
 	});
 }
 
-/** Supprime un besoin (CASCADE sur les postes). */
-export async function supprimerBesoin(id: string): Promise<void> {
-	await db.delete(besoin).where(eq(besoin.id, id));
+export type SuppressionBesoinResult = { ok: true } | { ok: false; reason: 'passe_avec_reservations' };
+
+/**
+ * Supprime un besoin (CASCADE sur les postes). **Refuse** de supprimer un besoin
+ * déjà **passé** qui porte au moins une réservation : il constitue l'historique
+ * des interventions (heures effectuées) et ne doit pas être effacé
+ * rétroactivement. Un besoin futur reste supprimable (confirmation côté UI) ;
+ * pour retirer un poste passé, l'admin doit d'abord le **libérer**.
+ */
+export async function supprimerBesoin(id: string): Promise<SuppressionBesoinResult> {
+	return db.transaction(async (tx) => {
+		const b = await tx.select().from(besoin).where(eq(besoin.id, id)).get();
+		if (!b) return { ok: true }; // déjà supprimé — idempotent
+		const postes = await tx.select().from(poste).where(eq(poste.besoinId, id));
+		const aReservations = postes.some((p) => p.reservedBy);
+		const estPasse = posteKey(b.date, b.heureFin) <= parisNowKey();
+		if (estPasse && aReservations) return { ok: false, reason: 'passe_avec_reservations' };
+		await tx.delete(besoin).where(eq(besoin.id, id));
+		return { ok: true };
+	});
 }
 
 /**

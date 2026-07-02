@@ -114,7 +114,14 @@ export const actions: Actions = {
 
 	supprimer: async ({ locals, params }) => {
 		requireAdmin(locals.user);
-		await supprimerBesoin(params.id);
+		const res = await supprimerBesoin(params.id);
+		if (!res.ok) {
+			return fail(400, {
+				action: 'supprimer',
+				error:
+					"Ce besoin est passé et comporte des réservations : il fait partie de l'historique des interventions et ne peut pas être supprimé."
+			});
+		}
 		throw redirect(303, '/besoins');
 	}
 };

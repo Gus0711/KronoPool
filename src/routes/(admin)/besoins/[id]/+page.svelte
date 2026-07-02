@@ -49,6 +49,12 @@
 	<ArrowLeft size={16} /> Retour aux besoins
 </a>
 
+{#if form?.action === 'supprimer' && form?.error}
+	<div class="mb-4 rounded-cta border border-danger/20 bg-danger-bg px-3 py-2 text-[13px] font-medium text-danger">
+		{form.error}
+	</div>
+{/if}
+
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
 	<div>
 		<h1 class="font-display text-[24px] font-bold text-ink">{formatJour(d.date)}</h1>

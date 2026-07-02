@@ -1,5 +1,10 @@
 # Plan — Feature « Documents des intervenants »
 
+> **⚠️ Document historique (feature livrée, commit `1475755`).** Les « points à confirmer » de la
+> fin ont été tranchés dans le code : MIME autorisés = PDF/JPEG/PNG/WebP/HEIC, plafond 10 Mo,
+> plusieurs fichiers par type (le plus récent non expiré fait foi), colonne `niveauRequis`
+> conservée. Référence à jour : [`ARCHITECTURE.md`](./ARCHITECTURE.md) § Documents.
+
 > Ajout d'une section documents au profil des intervenants (carte d'identité, diplômes, PSE1, RIB…),
 > certains marqués « obligatoire ». Consultation/gestion par l'intervenant et par l'admin.
 

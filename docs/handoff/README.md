@@ -1,5 +1,11 @@
 # Handoff : KronoPool — application de gestion des plannings d'intervenants (piscine)
 
+> **Note (juillet 2026)** : ce handoff est le document de design **d'origine** (« le projet part
+> de zéro » ne s'applique plus — la V1 est livrée). Il reste la référence pour les tokens et le
+> style. Le design implémenté l'enrichit (« Lagon vivant » : vagues animées, jauges d'eau) et
+> l'écran « Mon compte » comporte désormais la carte documents et le toggle notifications push.
+> État réel du code : [`../ARCHITECTURE.md`](../ARCHITECTURE.md).
+
 ## Vue d'ensemble
 
 KronoPool est une application web **mobile-first** (SvelteKit + SQLite/Drizzle) qui permet à
