@@ -9,17 +9,32 @@
 	import NotificationsToggle from '$lib/components/NotificationsToggle.svelte';
 	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
-	import { ArrowLeft, LogOut } from 'lucide-svelte';
+	import { ArrowLeft, LogOut, CalendarPlus, Copy, RefreshCw } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let loading = $state(false);
 
 	const estIntervenant = $derived(data.user?.role === 'intervenant');
+	// Variante webcal:// pour l'abonnement en un clic (ouvre l'app calendrier).
+	const webcalUrl = $derived(data.calendrierUrl?.replace(/^https?:\/\//, 'webcal://') ?? '');
 
 	$effect(() => {
 		if (form?.action === 'motDePasse' && form.success) toasts.success('Mot de passe modifié ✓');
+		if (form?.action === 'calendrier' && form.success) {
+			toasts.success(form.regenere ? 'Nouveau lien généré ✓' : 'Abonnement calendrier activé ✓');
+		}
 	});
+
+	async function copier() {
+		if (!data.calendrierUrl) return;
+		try {
+			await navigator.clipboard.writeText(data.calendrierUrl);
+			toasts.success('Lien copié ✓');
+		} catch {
+			toasts.error('Copie impossible — sélectionnez le lien manuellement.');
+		}
+	}
 </script>
 
 <svelte:head><title>Mon compte · KronoPool</title></svelte:head>
@@ -107,6 +122,49 @@
 					</button>
 				</form>
 			</div>
+
+			<!-- Abonnement calendrier iCal (intervenants) -->
+			{#if estIntervenant}
+				<div class="card-lagon mb-4">
+					<h2 class="mb-1 flex items-center gap-2 font-display text-[15px] font-bold text-ink">
+						<CalendarPlus size={18} class="text-teal" /> Mon calendrier
+					</h2>
+					<p class="mb-3 text-[13px] text-muted">
+						Ajoutez vos créneaux réservés à Google Agenda, Apple Calendrier, etc. Ils se
+						mettent à jour automatiquement.
+					</p>
+
+					{#if !data.calendrierUrl}
+						<form method="POST" action="?/calendrier" use:enhance>
+							<button class="cta-sand inline-flex items-center gap-2" type="submit" use:ripple>
+								<CalendarPlus size={18} /> Activer l'abonnement
+							</button>
+						</form>
+					{:else}
+						<div class="flex flex-col gap-2">
+							<a href={webcalUrl} class="cta-sand inline-flex items-center justify-center gap-2" use:ripple>
+								<CalendarPlus size={18} /> S'abonner en un clic
+							</a>
+							<div class="flex items-center gap-2">
+								<input class="field flex-1 text-[12px]" type="text" value={data.calendrierUrl} readonly onclick={(e) => e.currentTarget.select()} />
+								<button class="inline-flex shrink-0 items-center gap-1 rounded-cta border border-card-border bg-white px-3 py-2.5 text-[13px] font-semibold text-teal" type="button" onclick={copier}>
+									<Copy size={15} /> Copier
+								</button>
+							</div>
+							<p class="text-[12px] text-muted">
+								Ce lien est personnel et secret. En cas de partage accidentel, régénérez-le
+								(l'ancien cessera de fonctionner).
+							</p>
+							<form method="POST" action="?/calendrier" use:enhance>
+								<input type="hidden" name="regenerer" value="true" />
+								<button class="inline-flex items-center gap-1 text-[12px] font-semibold text-danger" type="submit">
+									<RefreshCw size={13} /> Régénérer le lien
+								</button>
+							</form>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- Notifications push (masqué si non supporté) -->
 			<div class="mb-4"><NotificationsToggle publicKey={data.pushPublicKey} /></div>

@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { auditLog, besoin, poste, user, type Niveau } from '../db/schema';
+import { auditLog, besoin, poste, rappel, user, type Niveau } from '../db/schema';
 import { parisNowKey, posteKey } from '../time';
 import { estEligible } from './eligibilite';
 import { occurrencesHebdo } from '$lib/recurrence';
@@ -385,7 +385,13 @@ export type AssignationResult =
 	| { ok: true }
 	| {
 			ok: false;
-			reason: 'introuvable' | 'intervenant_invalide' | 'ineligible' | 'deja_pris' | 'deja_sur_besoin';
+			reason:
+				| 'introuvable'
+				| 'intervenant_invalide'
+				| 'ineligible'
+				| 'deja_pris'
+				| 'deja_sur_besoin'
+				| 'chevauchement';
 	  };
 
 /**
@@ -425,6 +431,20 @@ export async function assignerPoste(
 			.get();
 		if (dejaSurBesoin) return { ok: false, reason: 'deja_sur_besoin' as const };
 
+		// Anti-chevauchement : l'intervenant ne peut pas être assigné à deux créneaux
+		// qui se recoupent le même jour.
+		const b = await tx.select().from(besoin).where(eq(besoin.id, p.besoinId)).get();
+		if (b) {
+			const memeJour = await tx
+				.select({ heureDebut: besoin.heureDebut, heureFin: besoin.heureFin })
+				.from(poste)
+				.innerJoin(besoin, eq(poste.besoinId, besoin.id))
+				.where(and(eq(poste.reservedBy, intervenantId), eq(besoin.date, b.date)));
+			if (memeJour.some((x) => x.heureDebut < b.heureFin && x.heureFin > b.heureDebut)) {
+				return { ok: false, reason: 'chevauchement' as const };
+			}
+		}
+
 		const res = await tx
 			.update(poste)
 			.set({ reservedBy: intervenantId, reservedAt: new Date() })
@@ -461,6 +481,9 @@ export async function libererPoste(adminId: string, posteId: string): Promise<bo
 			.update(poste)
 			.set({ reservedBy: null, reservedAt: null })
 			.where(eq(poste.id, posteId));
+		// Purge les rappels déjà envoyés : si le poste est re-réservé, le nouvel
+		// occupant recevra ses propres rappels.
+		await tx.delete(rappel).where(eq(rappel.posteId, posteId));
 		return true;
 	});
 }

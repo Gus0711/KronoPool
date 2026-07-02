@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { besoin, poste, type Niveau } from '../db/schema';
 import { parisNowKey, posteKey } from '../time';
@@ -64,6 +64,38 @@ export async function mesReservations(userId: string): Promise<MesReservations> 
 	// Les passées : plus récentes d'abord.
 	passees.reverse();
 	return { aVenir, passees };
+}
+
+/** Une réservation destinée au flux calendrier iCal. */
+export interface CreneauCalendrier {
+	posteId: string;
+	niveauRequis: Niveau;
+	date: string;
+	heureDebut: string;
+	heureFin: string;
+	commentaire: string | null;
+}
+
+/**
+ * Réservations d'un intervenant à exposer dans son abonnement calendrier (iCal).
+ * Fenêtre glissante : à partir de 90 jours avant aujourd'hui (borne le flux sans
+ * perdre l'historique récent ; les créneaux futurs sont tous inclus).
+ */
+export async function reservationsCalendrier(userId: string): Promise<CreneauCalendrier[]> {
+	const depuis = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+	return db
+		.select({
+			posteId: poste.id,
+			niveauRequis: poste.niveauRequis,
+			date: besoin.date,
+			heureDebut: besoin.heureDebut,
+			heureFin: besoin.heureFin,
+			commentaire: besoin.commentaire
+		})
+		.from(poste)
+		.innerJoin(besoin, eq(poste.besoinId, besoin.id))
+		.where(and(eq(poste.reservedBy, userId), sql`${besoin.date} >= ${depuis}`))
+		.orderBy(besoin.date, besoin.heureDebut);
 }
 
 /** Total heures + détail des créneaux comptés, pour un intervalle de dates. */

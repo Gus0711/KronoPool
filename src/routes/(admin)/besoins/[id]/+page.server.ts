@@ -43,7 +43,8 @@ const MSG_ASSIGN: Record<Exclude<AssignationResult, { ok: true }>['reason'], str
 	intervenant_invalide: 'Intervenant invalide ou compte inactif.',
 	ineligible: "Cet intervenant n'a pas le niveau requis pour ce poste.",
 	deja_pris: 'Ce poste vient d’être réservé.',
-	deja_sur_besoin: 'Cet intervenant occupe déjà un poste de ce besoin.'
+	deja_sur_besoin: 'Cet intervenant occupe déjà un poste de ce besoin.',
+	chevauchement: 'Cet intervenant a déjà un créneau qui chevauche cet horaire.'
 };
 
 export const actions: Actions = {

@@ -31,6 +31,9 @@ Push service (FCM / Mozilla / APNs…) ◀── web-push (serveur, clé privée
 | `document_type` | Catalogue configurable | `obligatoire`, `niveau_requis` (null = tous), `ordre`, `actif` (désactivation sans suppression) |
 | `document` | Métadonnées d'un fichier | Le binaire est **sur disque** (`stored_name` = UUID + extension d'allowlist, jamais le nom client). `type_id` → `SET NULL` (supprimer un type ne détruit pas les fichiers). `date_expiration` optionnelle |
 | `push_subscription` | Abonnement Web Push | `endpoint` unique, clés `p256dh`/`auth`, un par appareil/navigateur, cascade sur le user |
+| `rappel` | Rappels de créneau déjà envoyés | Une ligne par (`poste`, `kind` = `j1`/`h2`), unique ; idempotence du planificateur ; cascade sur le poste |
+
+Colonnes notables ajoutées à `user` : `calendar_token` (jeton secret de l'abonnement iCal, unique, nullable).
 
 Conventions : ids = UUID texte ; dates métier = texte `YYYY-MM-DD` ; heures = texte `HH:MM` ;
 horodatages système = timestamp entier. **Rien de calculable n'est stocké** : statut d'un besoin
@@ -83,9 +86,14 @@ Dans une **transaction** :
 2. vérifier : éligibilité (`services/eligibilite.ts` — MNS ⊇ BNSSA), poste **futur**
    (`date + heure_debut > maintenant` en Europe/Paris), pas déjà un poste réservé sur **ce**
    besoin ;
-3. `UPDATE poste SET reserved_by=?, reserved_at=? WHERE id=? AND reserved_by IS NULL` ;
-4. `rowsAffected === 1` → succès ; `0` → « déjà réservé » (l'UI retire la carte et affiche un
+3. pas de **chevauchement** avec un autre créneau déjà réservé le même jour (on ne peut pas être à
+   deux postes en même temps) ;
+4. `UPDATE poste SET reserved_by=?, reserved_at=? WHERE id=? AND reserved_by IS NULL` ;
+5. `rowsAffected === 1` → succès ; `0` → « déjà réservé » (l'UI retire la carte et affiche un
    toast).
+
+Le même garde-fou de chevauchement s'applique à l'assignation manuelle admin, et les créneaux en
+conflit sont masqués de la liste de l'intervenant (`listerCreneaux`).
 
 L'**assignation manuelle** par l'admin (`services/besoins.ts`) applique les mêmes garde-fous
 (intervenant actif, éligible, poste libre, pas de doublon sur le besoin) + écrit dans `audit_log`.
@@ -152,6 +160,24 @@ chronologique, et les changements d'heure (DST) sont absorbés sans conversion d
 - Service worker (`src/service-worker.ts`) : précache **uniquement** les assets statiques du build
   (aucune page SSR/authentifiée en cache — pas de mode hors-ligne), gère `push` (affichage) et
   `notificationclick` (focus/navigation).
+
+**Rappels de créneau** (`src/lib/server/push/rappels.ts` + `src/lib/server/scheduler.ts`) : un
+planificateur en process (démarré paresseusement au 1er accès dans `hooks.server.ts`, jamais au
+build) appelle `envoyerRappelsDus()` toutes les 5 min. Il envoie un rappel **J-1** (< 24 h) et
+**H-2** (< 2 h) à l'intervenant ayant réservé, en heure murale Europe/Paris convertie en instant réel
+(`parisWallToInstant`, DST géré). Idempotence par la table `rappel` (une ligne par `poste`+`kind`,
+`onConflictDoNothing`), purgée à la libération du poste. No-op si les clés VAPID sont absentes.
+*Limite* : sur cible serverless (future Vercel), remplacer ce timer par un vrai cron appelant
+`envoyerRappelsDus()`.
+
+### Abonnement calendrier (iCal)
+
+L'intervenant active un flux `.ics` personnel depuis `/compte` (action `calendrier` → jeton secret
+`calendarToken` sur `user`, régénérable pour révoquer). La route **publique** `/calendrier/[token]`
+(exemptée des guards dans `hooks.server.ts`, authentifiée par le seul jeton — modèle *capability*
+comme les URL privées Google Calendar) sert un iCalendar RFC 5545 construit par
+`src/lib/server/ical.ts` : créneaux réservés (fenêtre glissante 90 j) convertis en **UTC** (pas de
+VTIMEZONE), échappement et repli de lignes conformes. Fonction de génération pure et testée.
 
 ### PWA
 

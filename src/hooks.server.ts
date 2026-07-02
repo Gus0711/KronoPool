@@ -6,6 +6,7 @@ import {
 	clearSessionCookie
 } from '$lib/server/auth/session';
 import { homePathFor } from '$lib/server/auth/guards';
+import { demarrerPlanificateur } from '$lib/server/scheduler';
 
 /**
  * Résolution de session + **guards de rôle côté serveur** (CDC §8).
@@ -40,6 +41,9 @@ function matches(path: string, prefixes: string[]): boolean {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// Démarre le planificateur de rappels au 1er accès serveur (idempotent).
+	demarrerPlanificateur();
+
 	const token = event.cookies.get(SESSION_COOKIE) ?? null;
 	event.locals.user = null;
 	event.locals.sessionToken = null;
@@ -58,6 +62,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const { user } = event.locals;
 	const path = event.url.pathname;
+
+	// Flux calendrier iCal : authentifié par jeton dans l'URL, pas par session.
+	// On court-circuite tous les guards (l'endpoint valide lui-même le jeton).
+	if (path.startsWith('/calendrier/')) return resolve(event);
 
 	// --- Non authentifié -------------------------------------------------
 	if (!user) {

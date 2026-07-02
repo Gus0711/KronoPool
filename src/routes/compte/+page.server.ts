@@ -5,6 +5,7 @@ import { env as pubEnv } from '$env/dynamic/public';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema';
 import { hashPassword, verifyPassword, PASSWORD_MIN_LENGTH } from '$lib/server/auth/password';
+import { generateSessionToken } from '$lib/server/auth/session';
 import { requireUser } from '$lib/server/auth/guards';
 import { statutValidite } from '$lib/server/services/diplomes';
 import {
@@ -17,12 +18,15 @@ import {
 } from '$lib/server/services/documents';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const u = requireUser(locals.user);
 	const full = await db.select().from(user).where(eq(user.id, u.id)).get();
 	if (!full) throw fail(404);
 
 	const estIntervenant = full.role === 'intervenant';
+	// URL absolue de l'abonnement calendrier (null tant que non activé).
+	const calendrierUrl =
+		estIntervenant && full.calendarToken ? `${url.origin}/calendrier/${full.calendarToken}.ics` : null;
 
 	return {
 		infos: {
@@ -43,7 +47,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			? await etatConformite({ id: full.id, niveau: full.niveau })
 			: { lignes: [], manquants: 0, enAlerte: false },
 		// Clé publique VAPID pour l'abonnement push côté client (null si push désactivé).
-		pushPublicKey: pubEnv.PUBLIC_VAPID_KEY || null
+		pushPublicKey: pubEnv.PUBLIC_VAPID_KEY || null,
+		calendrierUrl
 	};
 };
 
@@ -105,5 +110,26 @@ export const actions: Actions = {
 		}
 		await supprimerDocument(id);
 		return { action: 'supprimerDocument', success: true };
+	},
+
+	/**
+	 * Active l'abonnement calendrier (crée un jeton s'il n'existe pas). Avec le
+	 * champ `regenerer`, remplace le jeton existant → l'ancien lien cesse de
+	 * fonctionner (révocation d'un lien partagé par erreur).
+	 */
+	calendrier: async ({ request, locals }) => {
+		const u = requireUser(locals.user);
+		if (u.role !== 'intervenant') return fail(403, { action: 'calendrier', error: 'Réservé aux intervenants.' });
+		const form = await request.formData();
+		const regenerer = form.get('regenerer') === 'true';
+
+		const full = await db.select({ token: user.calendarToken }).from(user).where(eq(user.id, u.id)).get();
+		if (full?.token && !regenerer) return { action: 'calendrier', success: true };
+
+		await db
+			.update(user)
+			.set({ calendarToken: generateSessionToken(), updatedAt: new Date() })
+			.where(eq(user.id, u.id));
+		return { action: 'calendrier', success: true, regenere: regenerer };
 	}
 };

@@ -94,6 +94,9 @@ Ces règles se recoupent entre plusieurs fichiers (schéma, services, guards, UI
 - **Pas d'annulation intervenant** : aucun bouton/route/action d'annulation côté intervenant. Seul
   l'**admin** peut **libérer** un poste (tracé `audit_log` + notification aux éligibles). Afficher
   le message « contacter le directeur par téléphone » (`PUBLIC_DIRECTEUR_TEL`).
+- **Anti-chevauchement** : réservation ET assignation refusent un créneau qui recoupe (même jour,
+  plages sécantes) un créneau déjà tenu par l'intervenant ; `listerCreneaux` masque aussi ces
+  créneaux. Motif de refus `chevauchement`.
 - **Génération de postes** : à la création d'un besoin, l'admin saisit un nombre de MNS + un nombre
   de BNSSA → autant de lignes `poste`. Suppression d'un besoin = `ON DELETE CASCADE` sur les
   postes. L'édition refuse de réduire le nombre de postes sous le nombre de réservés. Un besoin
@@ -109,7 +112,12 @@ Ces règles se recoupent entre plusieurs fichiers (schéma, services, guards, UI
   agrégat, **pas de table dédiée**.
 - **Notifications push** : toujours en **fire-and-forget** (`void notifier…()`) — ne jamais
   bloquer une action sur l'envoi. Trois événements : besoin publié → éligibles ; poste libéré →
-  éligibles ; réservation → admins.
+  éligibles ; réservation → admins. Plus des **rappels** automatiques J-1/H-2 via le
+  planificateur (`scheduler.ts` → `rappels.ts`), idempotents (table `rappel`). Sur cible serverless,
+  remplacer le timer par un cron appelant `envoyerRappelsDus()`.
+- **Abonnement calendrier iCal** : route **publique** `/calendrier/[token]` (jeton `calendarToken`
+  sur `user`, exemptée des guards dans `hooks.server.ts`). Génération pure `src/lib/server/ical.ts`
+  (UTC, RFC 5545). Jeton régénérable côté `/compte` pour révoquer un lien fuité.
 - **Extensibilité modèle** : ne pas casser la compatibilité avec les évolutions prévues —
   personnel interne (futur champ `type_intervenant` sur `user`), taux horaire (futur
   `tarif_horaire` sur `poste`). Ne pas les implémenter tant que non demandés.

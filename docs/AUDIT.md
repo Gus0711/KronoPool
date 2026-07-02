@@ -357,6 +357,9 @@ Le reste concerne l'**outillage de dev uniquement** (jamais exposé en prod) :
    (jamais renvoyé au client grâce à `toView`, mais lecture inutile).
 8. **Chevauchement inter-besoins non contrôlé** : rien n'empêche un intervenant d'être réservé sur
    deux besoins distincts au même horaire. Le CDC ne l'exige pas — à trancher explicitement.
+   ✅ **Corrigé (2 juillet 2026)** — réservation et assignation refusent un créneau qui recoupe un
+   créneau déjà tenu le même jour (motif `chevauchement`) ; ces créneaux sont aussi masqués de la
+   liste intervenant. Contigus (fin = début) autorisés.
 9. **Fallback de navigation du service worker** : `service-worker.ts:52` — `win.navigate?.(cible)`
    sans repli si `navigate` échoue (le clic sur la notification focalise sans rediriger).
 

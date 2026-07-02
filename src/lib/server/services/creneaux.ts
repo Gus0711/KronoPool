@@ -51,19 +51,38 @@ export async function listerCreneaux(
 
 	if (!userId) return rows;
 
-	// Masque les postes d'un besoin où l'intervenant détient déjà un poste :
-	// il ne peut pas en tenir deux (cohérent avec le garde-fou de réservation).
-	const dejaReserves = await db
-		.select({ besoinId: poste.besoinId })
+	// Masque les créneaux que l'intervenant ne pourrait pas réserver de toute façon :
+	// - un autre poste du **même besoin** (il ne peut pas en tenir deux) ;
+	// - un créneau qui **chevauche** un créneau déjà réservé (même jour, plages qui
+	//   se recoupent) — cohérent avec le garde-fou de réservation.
+	const reserves = await db
+		.select({
+			besoinId: poste.besoinId,
+			date: besoin.date,
+			heureDebut: besoin.heureDebut,
+			heureFin: besoin.heureFin
+		})
 		.from(poste)
+		.innerJoin(besoin, eq(poste.besoinId, besoin.id))
 		.where(eq(poste.reservedBy, userId));
-	const exclus = new Set(dejaReserves.map((r) => r.besoinId));
-	return exclus.size ? rows.filter((r) => !exclus.has(r.besoinId)) : rows;
+	if (reserves.length === 0) return rows;
+
+	return rows.filter(
+		(r) =>
+			!reserves.some(
+				(x) =>
+					x.besoinId === r.besoinId ||
+					(x.date === r.date && x.heureDebut < r.heureFin && x.heureFin > r.heureDebut)
+			)
+	);
 }
 
 export type ReservationResult =
 	| { ok: true }
-	| { ok: false; reason: 'introuvable' | 'ineligible' | 'passe' | 'deja_pris' | 'deja_sur_besoin' };
+	| {
+			ok: false;
+			reason: 'introuvable' | 'ineligible' | 'passe' | 'deja_pris' | 'deja_sur_besoin' | 'chevauchement';
+	  };
 
 /**
  * Réservation **atomique** « premier arrivé, premier servi » (CDC §9 — point critique).
@@ -84,7 +103,8 @@ export async function reserverPoste(
 				besoinId: poste.besoinId,
 				niveauRequis: poste.niveauRequis,
 				date: besoin.date,
-				heureDebut: besoin.heureDebut
+				heureDebut: besoin.heureDebut,
+				heureFin: besoin.heureFin
 			})
 			.from(poste)
 			.innerJoin(besoin, eq(poste.besoinId, besoin.id))
@@ -103,6 +123,17 @@ export async function reserverPoste(
 			.where(and(eq(poste.besoinId, p.besoinId), eq(poste.reservedBy, userId)))
 			.get();
 		if (dejaSurBesoin) return { ok: false, reason: 'deja_sur_besoin' as const };
+
+		// Anti-chevauchement : pas deux créneaux qui se recoupent le même jour
+		// (on ne peut pas être à deux postes en même temps).
+		const memeJour = await tx
+			.select({ heureDebut: besoin.heureDebut, heureFin: besoin.heureFin })
+			.from(poste)
+			.innerJoin(besoin, eq(poste.besoinId, besoin.id))
+			.where(and(eq(poste.reservedBy, userId), eq(besoin.date, p.date)));
+		if (memeJour.some((x) => x.heureDebut < p.heureFin && x.heureFin > p.heureDebut)) {
+			return { ok: false, reason: 'chevauchement' as const };
+		}
 
 		const res = await tx
 			.update(poste)

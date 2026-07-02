@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /**
  * Modèle de données KronoPool (CDC §5).
@@ -38,6 +38,12 @@ export const user = sqliteTable('user', {
 	dateValiditeTitre: text('date_validite_titre'),
 	/** Validité secourisme PSE1, format `YYYY-MM-DD`. */
 	dateValiditePse: text('date_validite_pse'),
+	/**
+	 * Jeton secret (capability) de l'abonnement calendrier iCal de l'intervenant.
+	 * `null` tant que l'abonnement n'a pas été activé. Régénérable pour révoquer un
+	 * lien fuité. Quiconque possède l'URL peut lire le planning de l'intervenant.
+	 */
+	calendarToken: text('calendar_token').unique(),
 	passwordHash: text('password_hash').notNull(),
 	mustChangePassword: integer('must_change_password', { mode: 'boolean' })
 		.notNull()
@@ -204,6 +210,34 @@ export const pushSubscription = sqliteTable('push_subscription', {
 		.default(sql`(unixepoch())`)
 });
 
+/**
+ * Rappels de créneau **déjà envoyés** (idempotence du planificateur). Une ligne
+ * par (poste, type de rappel). `kind` : `j1` (~24 h avant) / `h2` (~2 h avant).
+ * Supprimé en cascade avec le poste ; purgé aussi à la libération d'un poste
+ * (pour que le prochain occupant reçoive ses propres rappels).
+ */
+export const RAPPEL_KINDS = ['j1', 'h2'] as const;
+export type RappelKind = (typeof RAPPEL_KINDS)[number];
+
+export const rappel = sqliteTable(
+	'rappel',
+	{
+		id: text('id')
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		posteId: text('poste_id')
+			.notNull()
+			.references(() => poste.id, { onDelete: 'cascade' }),
+		kind: text('kind', { enum: RAPPEL_KINDS }).notNull(),
+		sentAt: integer('sent_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+	},
+	(t) => ({
+		posteKindUniq: uniqueIndex('rappel_poste_kind_idx').on(t.posteId, t.kind)
+	})
+);
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Session = typeof session.$inferSelect;
@@ -213,3 +247,4 @@ export type AuditLog = typeof auditLog.$inferSelect;
 export type DocumentType = typeof documentType.$inferSelect;
 export type DocumentRow = typeof document.$inferSelect;
 export type PushSubscription = typeof pushSubscription.$inferSelect;
+export type Rappel = typeof rappel.$inferSelect;

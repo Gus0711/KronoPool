@@ -54,6 +54,34 @@ export function posteKey(date: string, heureDebut: string): string {
 	return `${date}T${heureDebut}`;
 }
 
+/** Parts (nombres) de l'heure murale affichée à Paris pour un instant donné. */
+function parisPartsNum(instant: Date) {
+	const p = parisParts(instant);
+	return {
+		y: Number(p.year),
+		mo: Number(p.month),
+		d: Number(p.day),
+		h: Number(p.hour === '24' ? '00' : p.hour),
+		mi: Number(p.minute)
+	};
+}
+
+/**
+ * Convertit une heure **murale Europe/Paris** (`YYYY-MM-DD` + `HH:MM`) en instant
+ * UTC (`Date`). Gère l'heure d'été/hiver via l'offset réel du fuseau à cette date.
+ * Méthode standard en deux passes ; les rares heures ambiguës/inexistantes du
+ * changement d'heure sont approximées (acceptable pour des créneaux de piscine).
+ */
+export function parisWallToInstant(date: string, hm: string): Date {
+	const [y, mo, d] = date.split('-').map(Number);
+	const [h, mi] = hm.split(':').map(Number);
+	const guess = Date.UTC(y, mo - 1, d, h, mi);
+	const wall = parisPartsNum(new Date(guess));
+	const asUtc = Date.UTC(wall.y, wall.mo - 1, wall.d, wall.h, wall.mi);
+	const offset = asUtc - guess; // ms dont Paris est en avance sur UTC à cet instant
+	return new Date(guess - offset);
+}
+
 /**
  * Durée en heures (décimal) entre deux heures `HH:MM`.
  * Utilisé pour le récap (somme heure_fin - heure_debut).

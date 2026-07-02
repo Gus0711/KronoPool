@@ -21,7 +21,8 @@ Interface **en français**, fuseau **Europe/Paris**. Installable en **PWA**, ave
 - **Mes réservations** : à venir / passées ; l'annulation passe par un appel au directeur (`tel:`).
 - **Mon récap** : total d'heures par période (temps **effectif**, pauses déduites) + export CSV.
 - **Mon compte** : changement de mot de passe, **documents** (upload CNI/diplômes/PSE1…, PDF/JPEG/
-  PNG/WebP/HEIC, 10 Mo max, date d'expiration), activation des **notifications push**.
+  PNG/WebP/HEIC, 10 Mo max, date d'expiration), activation des **notifications push**, **abonnement
+  calendrier (iCal)** — les créneaux réservés se synchronisent dans Google/Apple Agenda.
 
 **Espace admin** (desktop responsive, tiroir latéral en mobile) :
 
@@ -43,7 +44,9 @@ Interface **en français**, fuseau **Europe/Paris**. Installable en **PWA**, ave
 
 **Transverse** : PWA installable (manifest + service worker, assets seuls en cache — pas de mode
 hors-ligne pour les pages) ; notifications push sur 3 événements — *besoin publié* (intervenants
-éligibles), *poste libéré* (intervenants éligibles), *réservation effectuée* (admins).
+éligibles), *poste libéré* (intervenants éligibles), *réservation effectuée* (admins) — plus des
+**rappels automatiques** J-1 et H-2 avant chaque créneau réservé ; abonnement **calendrier iCal**
+côté intervenant.
 
 ## Stack
 
@@ -143,6 +146,8 @@ src/
   Éligibilité + poste futur (Europe/Paris) vérifiés avant. Un intervenant ne peut pas occuper
   deux postes du même besoin.
 - **Pas d'annulation intervenant** : seul l'admin peut **libérer** un poste (tracé dans `audit_log`).
+- **Anti-chevauchement** : un intervenant ne peut pas réserver (ni être assigné à) deux créneaux qui
+  se recoupent le même jour ; les créneaux en conflit sont aussi masqués de sa liste.
 - **Heures** : chaque besoin a une *amplitude* (fin − début) et un *temps effectif* (pause déduite) ;
   les récaps somment le **temps effectif** des créneaux terminés. Statut besoin et récaps sont
   **calculés**, jamais stockés.

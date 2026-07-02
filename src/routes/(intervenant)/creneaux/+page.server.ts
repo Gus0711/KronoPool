@@ -16,7 +16,8 @@ const messages: Record<string, string> = {
 	ineligible: 'Ce créneau ne correspond pas à votre niveau.',
 	passe: 'Ce créneau est déjà passé.',
 	deja_pris: 'Ce créneau vient d’être réservé.',
-	deja_sur_besoin: 'Vous avez déjà un poste sur ce créneau.'
+	deja_sur_besoin: 'Vous avez déjà un poste sur ce créneau.',
+	chevauchement: 'Vous avez déjà un créneau qui chevauche cet horaire.'
 };
 
 export const actions: Actions = {
