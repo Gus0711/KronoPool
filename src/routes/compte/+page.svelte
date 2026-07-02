@@ -5,6 +5,7 @@
 	import NiveauBadge from '$lib/components/NiveauBadge.svelte';
 	import ValiditePill from '$lib/components/ValiditePill.svelte';
 	import DocumentsSection from '$lib/components/DocumentsSection.svelte';
+	import InstallButton from '$lib/components/InstallButton.svelte';
 	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
 	import { ArrowLeft, LogOut } from 'lucide-svelte';
@@ -105,6 +106,9 @@
 					</button>
 				</form>
 			</div>
+
+			<!-- Installer la PWA (masqué si déjà installée ou non disponible) -->
+			<div class="mb-4"><InstallButton /></div>
 
 			<a href="/deconnexion" class="inline-flex items-center gap-2 text-[14px] font-semibold text-danger" data-sveltekit-reload>
 				<LogOut size={18} /> Se déconnecter
