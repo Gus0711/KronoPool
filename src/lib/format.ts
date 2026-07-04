@@ -7,6 +7,7 @@ import { decompteHeures, aPause } from '$lib/heures';
 /** `2025-07-05` → `Samedi 5 juillet` (première lettre capitalisée). */
 export function formatJour(dateISO: string): string {
 	const d = new Date(`${dateISO}T12:00:00`);
+	if (Number.isNaN(d.getTime())) return dateISO ?? '';
 	const s = new Intl.DateTimeFormat('fr-FR', {
 		weekday: 'long',
 		day: 'numeric',
@@ -15,9 +16,19 @@ export function formatJour(dateISO: string): string {
 	return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** `2025-07-05` → `05/07/2025`. */
+/** `2025-07-05` → `05/07/2025`. Renvoie l'entrée brute si la date est invalide. */
 export function formatDateCourt(dateISO: string): string {
 	const d = new Date(`${dateISO}T12:00:00`);
+	if (Number.isNaN(d.getTime())) return dateISO ?? '';
+	return new Intl.DateTimeFormat('fr-FR').format(d);
+}
+
+/**
+ * `Date` JS → `05/07/2025`. Tolérant : renvoie `—` si la date est absente ou
+ * invalide (ex. horodatage corrompu en base) — ne jamais faire planter le rendu.
+ */
+export function formatDate(d: Date | null | undefined): string {
+	if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '—';
 	return new Intl.DateTimeFormat('fr-FR').format(d);
 }
 

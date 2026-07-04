@@ -4,7 +4,7 @@
 	import ValiditePill from '$lib/components/ValiditePill.svelte';
 	import { ripple } from '$lib/actions/ripple';
 	import { toasts } from '$lib/toast';
-	import { formatDateCourt, formatTaille } from '$lib/format';
+	import { formatDate, formatTaille } from '$lib/format';
 	import { FileText, Upload, Trash2, Download, Plus } from 'lucide-svelte';
 	import type { DocumentView, Conformite } from '$lib/server/services/documents';
 
@@ -139,7 +139,7 @@
 						</div>
 						<div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
 							<span>{formatTaille(d.taille)}</span>
-							<span>· {formatDateCourt(d.uploadedAt.toISOString().slice(0, 10))}</span>
+							<span>· {formatDate(d.uploadedAt)}</span>
 							{#if d.validite}
 								<ValiditePill date={d.dateExpiration} statut={d.validite.statut} joursRestants={d.validite.joursRestants} />
 							{/if}
